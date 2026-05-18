@@ -1,0 +1,4344 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCC Analyzer — PT IPPI | Fishbone · 5Why · Pareto · SPC</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    /* ── Core Palette ── */
+    --bg-deep: #070b14;
+    --bg-base: #0d1117;
+    --bg-elevated: #131820;
+    --bg-card: #161d27;
+    --bg-input: #1a2332;
+
+    /* ── Borders ── */
+    --border-subtle: rgba(148, 163, 184, 0.08);
+    --border-default: rgba(148, 163, 184, 0.12);
+    --border-focus: rgba(99, 179, 237, 0.4);
+
+    /* ── Text ── */
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-tertiary: #64748b;
+    --text-muted: #475569;
+
+    /* ── Accents (harmonized, slightly desaturated) ── */
+    --accent-cyan: #38bdf8;
+    --accent-cyan-glow: rgba(56, 189, 248, 0.15);
+    --accent-orange: #fb923c;
+    --accent-orange-glow: rgba(251, 146, 60, 0.15);
+    --accent-violet: #a78bfa;
+    --accent-violet-glow: rgba(167, 139, 250, 0.15);
+    --accent-emerald: #34d399;
+    --accent-emerald-glow: rgba(52, 211, 153, 0.15);
+    --accent-amber: #fbbf24;
+    --accent-amber-glow: rgba(251, 191, 36, 0.15);
+    --accent-rose: #f472b6;
+    --accent-rose-glow: rgba(244, 114, 182, 0.15);
+
+    /* ── Status ── */
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+
+    /* ── 6M Mapping ── */
+    --m1: var(--accent-cyan);
+    --m2: var(--accent-orange);
+    --m3: var(--accent-violet);
+    --m4: var(--accent-emerald);
+    --m5: var(--accent-amber);
+    --m6: var(--accent-rose);
+
+    /* ── Spacing Scale ── */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+
+    /* ── Radii ── */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    /* ── Shadows ── */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+    --shadow-glow-cyan: 0 0 20px var(--accent-cyan-glow);
+    --shadow-glow-violet: 0 0 20px var(--accent-violet-glow);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body { 
+    font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+    background: var(--bg-deep); 
+    color: var(--text-primary); 
+    min-height: 100vh; 
+    overflow-x: hidden;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Subtle ambient background */
+  body::before {
+    content: ''; 
+    position: fixed; 
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.06), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(167, 139, 250, 0.04), transparent);
+    pointer-events: none; 
+    z-index: 0;
+  }
+
+  /* Grid pattern overlay */
+  body::after {
+    content: ''; 
+    position: fixed; 
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px), 
+      linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+    background-size: 48px 48px; 
+    pointer-events: none; 
+    z-index: 0;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%);
+  }
+
+  .app { 
+    position: relative; 
+    z-index: 1; 
+    max-width: 1400px; 
+    margin: 0 auto; 
+    padding: var(--space-6); 
+  }
+
+  /* ═══════════════════════════════════════════════
+     HEADER
+  ═══════════════════════════════════════════════ */
+  header {
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    padding: var(--space-5) var(--space-6); 
+    background: rgba(19, 24, 32, 0.7); 
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl); 
+    margin-bottom: var(--space-6); 
+    position: relative; 
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-md);
+  }
+
+  header::before {
+    content: ''; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    height: 2px; 
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-violet), var(--accent-orange));
+    opacity: 0.8;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08), transparent 50%);
+    pointer-events: none;
+  }
+
+  .header-title h1 { 
+    font-size: 1.6rem; 
+    font-weight: 800; 
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-cyan) 100%);
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-title p { 
+    font-size: 0.75rem; 
+    color: var(--text-tertiary); 
+    margin-top: var(--space-1); 
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .badge { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 6px; 
+    background: rgba(56, 189, 248, 0.08); 
+    border: 1px solid rgba(56, 189, 248, 0.2); 
+    border-radius: var(--radius-full); 
+    padding: 6px 14px; 
+    font-size: 0.7rem; 
+    font-family: 'Space Mono', monospace; 
+    color: var(--accent-cyan);
+    backdrop-filter: blur(8px);
+  }
+
+  /* ═══════════════════════════════════════════════
+     TABS — Pill Style
+  ═══════════════════════════════════════════════ */
+  .tabs { 
+    display: flex; 
+    gap: var(--space-2); 
+    background: rgba(19, 24, 32, 0.6); 
+    border: 1px solid var(--border-subtle); 
+    border-radius: var(--radius-lg); 
+    padding: var(--space-2); 
+    margin-bottom: var(--space-6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-sm);
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .tab { 
+    flex: 1;
+    white-space: nowrap;
+    padding: 10px 18px; 
+    border: none; 
+    border-radius: var(--radius-md); 
+    background: transparent; 
+    color: var(--text-tertiary); 
+    font-family: 'Inter', sans-serif; 
+    font-size: 0.82rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 8px;
+    position: relative;
+  }
+
+  .tab.active { 
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(167, 139, 250, 0.08)); 
+    color: var(--accent-cyan); 
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.08);
+  }
+
+  .tab:hover:not(.active) { 
+    color: var(--text-secondary); 
+    background: rgba(148, 163, 184, 0.06);
+  }
+
+  .panel { display: none; animation: panelIn 0.3s ease; }
+  .panel.active { display: block; }
+
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ═══════════════════════════════════════════════
+     CARDS — Glass Elevated
+  ═══════════════════════════════════════════════ */
+  .problem-card, .why-card { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-default); 
+    border-radius: var(--radius-xl); 
+    padding: var(--space-6); 
+    margin-bottom: var(--space-6);
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .problem-card:hover, .why-card:hover {
+    border-color: var(--border-focus);
+    box-shadow: var(--shadow-md), var(--shadow-glow-cyan);
+  }
+
+  .problem-card::before, .why-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.3), transparent);
+  }
+
+  .section-label { 
+    font-size: 0.68rem; 
+    font-family: 'Space Mono', monospace; 
+    letter-spacing: 0.15em; 
+    color: var(--accent-cyan); 
+    text-transform: uppercase; 
+    margin-bottom: var(--space-4); 
+    display: flex; 
+    align-items: center; 
+    gap: 8px;
+    font-weight: 700;
+  }
+
+  .section-label::before { 
+    content: '//'; 
+    opacity: 0.5;
+    color: var(--text-muted);
+  }
+
+  .group-info { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: var(--space-4); 
+    margin-bottom: var(--space-4); 
+  }
+
+  .field-group label { 
+    display: block; 
+    font-size: 0.78rem; 
+    color: var(--text-secondary); 
+    margin-bottom: var(--space-2); 
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  /* ═══════════════════════════════════════════════
+     FORM ELEMENTS
+  ═══════════════════════════════════════════════ */
+  input[type="text"], textarea, select { 
+    width: 100%; 
+    background: var(--bg-input); 
+    border: 1px solid var(--border-default); 
+    border-radius: var(--radius-md); 
+    padding: 11px 14px; 
+    color: var(--text-primary); 
+    font-family: 'Inter', sans-serif; 
+    font-size: 0.86rem; 
+    outline: none; 
+    transition: all 0.2s ease;
+    line-height: 1.5;
+  }
+
+  input[type="text"]::placeholder, textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  input[type="text"]:focus, textarea:focus, select:focus { 
+    border-color: var(--accent-cyan); 
+    box-shadow: 0 0 0 3px var(--accent-cyan-glow), inset 0 1px 2px rgba(0,0,0,0.2);
+    background: rgba(26, 35, 50, 0.9);
+  }
+
+  textarea { 
+    resize: vertical; 
+    min-height: 80px;
+    line-height: 1.6;
+  }
+
+  /* ═══════════════════════════════════════════════
+     6M GRID — Bento Style
+  ═══════════════════════════════════════════════ */
+  .m-grid { 
+    display: grid; 
+    grid-template-columns: repeat(3, 1fr); 
+    gap: var(--space-4); 
+  }
+
+  .m-card { 
+    background: var(--bg-elevated); 
+    border: 1px solid var(--border-subtle); 
+    border-radius: var(--radius-lg); 
+    padding: var(--space-5); 
+    position: relative; 
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .m-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-md);
+  }
+
+  .m-card::before { 
+    content: ''; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    height: 3px; 
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+  }
+
+  .m-card:hover::before { opacity: 1; }
+
+  .m-card[data-m="1"]::before { background: var(--m1); box-shadow: 0 0 12px var(--accent-cyan-glow); }
+  .m-card[data-m="2"]::before { background: var(--m2); box-shadow: 0 0 12px var(--accent-orange-glow); }
+  .m-card[data-m="3"]::before { background: var(--m3); box-shadow: 0 0 12px var(--accent-violet-glow); }
+  .m-card[data-m="4"]::before { background: var(--m4); box-shadow: 0 0 12px var(--accent-emerald-glow); }
+  .m-card[data-m="5"]::before { background: var(--m5); box-shadow: 0 0 12px var(--accent-amber-glow); }
+  .m-card[data-m="6"]::before { background: var(--m6); box-shadow: 0 0 12px var(--accent-rose-glow); }
+
+  .m-header { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    margin-bottom: var(--space-4); 
+  }
+
+  .m-icon { 
+    width: 36px; 
+    height: 36px; 
+    border-radius: var(--radius-md); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+  }
+
+  .m-card:hover .m-icon {
+    transform: scale(1.1);
+  }
+
+  .m-card[data-m="1"] .m-icon { background: rgba(56, 189, 248, 0.1); color: var(--m1); }
+  .m-card[data-m="2"] .m-icon { background: rgba(251, 146, 60, 0.1); color: var(--m2); }
+  .m-card[data-m="3"] .m-icon { background: rgba(167, 139, 250, 0.1); color: var(--m3); }
+  .m-card[data-m="4"] .m-icon { background: rgba(52, 211, 153, 0.1); color: var(--m4); }
+  .m-card[data-m="5"] .m-icon { background: rgba(251, 191, 36, 0.1); color: var(--m5); }
+  .m-card[data-m="6"] .m-icon { background: rgba(244, 114, 182, 0.1); color: var(--m6); }
+
+  .m-title { 
+    font-size: 0.85rem; 
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+
+  .m-subtitle { 
+    font-size: 0.68rem; 
+    color: var(--text-tertiary); 
+    font-family: 'Space Mono', monospace;
+    margin-top: 2px;
+  }
+
+  .cause-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: var(--space-2); 
+  }
+
+  .cause-item { 
+    display: flex; 
+    align-items: center; 
+    gap: var(--space-2);
+    animation: causeIn 0.25s ease;
+  }
+
+  @keyframes causeIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .cause-item input { 
+    flex: 1; 
+    padding: 8px 11px; 
+    font-size: 0.82rem;
+    background: rgba(10, 14, 23, 0.5);
+  }
+
+  .btn-remove { 
+    width: 28px; 
+    height: 28px; 
+    border: 1px solid rgba(248, 113, 113, 0.2); 
+    background: rgba(248, 113, 113, 0.06); 
+    color: var(--danger); 
+    border-radius: var(--radius-sm); 
+    cursor: pointer; 
+    font-size: 0.8rem; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    flex-shrink: 0; 
+    transition: all 0.2s ease;
+  }
+
+  .btn-remove:hover { 
+    background: rgba(248, 113, 113, 0.15); 
+    border-color: rgba(248, 113, 113, 0.4);
+    transform: scale(1.05);
+  }
+
+  .btn-add-cause { 
+    width: 100%; 
+    margin-top: var(--space-3); 
+    padding: 8px; 
+    border: 1px dashed var(--border-default); 
+    background: transparent; 
+    color: var(--text-tertiary); 
+    border-radius: var(--radius-md); 
+    cursor: pointer; 
+    font-size: 0.76rem; 
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    transition: all 0.25s ease;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-add-cause:hover { 
+    border-color: var(--accent-cyan); 
+    color: var(--accent-cyan);
+    background: rgba(56, 189, 248, 0.04);
+  }
+
+  /* ═══════════════════════════════════════════════
+     BUTTONS — Modern & Tactile
+  ═══════════════════════════════════════════════ */
+  .action-bar { 
+    display: flex; 
+    gap: var(--space-3); 
+    margin-top: var(--space-6); 
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn { 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 8px; 
+    padding: 11px 22px; 
+    border-radius: var(--radius-md); 
+    border: none; 
+    font-family: 'Inter', sans-serif; 
+    font-size: 0.84rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 0.01em;
+  }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .btn:hover::after { opacity: 1; }
+
+  .btn-primary { 
+    background: linear-gradient(135deg, var(--accent-cyan), #0ea5e9); 
+    color: #0a0e17; 
+    box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
+  }
+
+  .btn-primary:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 24px rgba(56, 189, 248, 0.35);
+  }
+
+  .btn-save { 
+    background: linear-gradient(135deg, var(--accent-emerald), #10b981); 
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(52, 211, 153, 0.2);
+  }
+
+  .btn-save:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 24px rgba(52, 211, 153, 0.3);
+  }
+
+  .btn-secondary { 
+    background: var(--bg-elevated); 
+    border: 1px solid var(--border-default); 
+    color: var(--text-secondary);
+  }
+
+  .btn-secondary:hover { 
+    border-color: var(--accent-cyan); 
+    color: var(--accent-cyan);
+    background: rgba(56, 189, 248, 0.06);
+    transform: translateY(-1px);
+  }
+
+  .btn-pdf { 
+    background: linear-gradient(135deg, #e11d48, #be123c); 
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(225, 29, 72, 0.2);
+  }
+
+  .btn-pdf:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 24px rgba(225, 29, 72, 0.3);
+  }
+
+  .btn:disabled { 
+    opacity: 0.4; 
+    cursor: not-allowed; 
+    transform: none !important; 
+    box-shadow: none !important;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: scale(0.98) translateY(0) !important;
+  }
+
+  /* ═══════════════════════════════════════════════
+     FISHBONE DIAGRAM
+  ═══════════════════════════════════════════════ */
+  .fishbone-wrap { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-default); 
+    border-radius: var(--radius-xl); 
+    padding: var(--space-6); 
+    margin-bottom: var(--space-6); 
+    overflow-x: auto;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+  }
+
+  .fishbone-wrap::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.2), transparent);
+  }
+
+  .fishbone-svg-container { 
+    min-width: 900px; 
+  }
+
+  svg text { 
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+
+  /* ═══════════════════════════════════════════════
+     5WHY — Timeline Style
+  ═══════════════════════════════════════════════ */
+  .why-chain { 
+    position: relative;
+    padding-left: var(--space-2);
+  }
+
+  .why-chain::before {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 34px;
+    bottom: 20px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--accent-cyan), var(--accent-violet), var(--accent-orange), var(--accent-rose));
+    border-radius: 2px;
+    opacity: 0.3;
+  }
+
+  .why-item { 
+    display: flex; 
+    align-items: flex-start; 
+    gap: var(--space-4); 
+    margin-bottom: var(--space-3);
+    animation: fadeIn 0.35s ease forwards;
+    opacity: 0;
+  }
+
+  .why-item:nth-child(1) { animation-delay: 0.05s; }
+  .why-item:nth-child(3) { animation-delay: 0.1s; }
+  .why-item:nth-child(5) { animation-delay: 0.15s; }
+  .why-item:nth-child(7) { animation-delay: 0.2s; }
+  .why-item:nth-child(9) { animation-delay: 0.25s; }
+
+  @keyframes fadeIn { 
+    from { opacity: 0; transform: translateX(-10px); } 
+    to { opacity: 1; transform: translateX(0); } 
+  }
+
+  .why-num { 
+    width: 36px; 
+    height: 36px; 
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(167, 139, 250, 0.08)); 
+    border: 1px solid rgba(56, 189, 248, 0.2); 
+    border-radius: var(--radius-md); 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 0.75rem; 
+    font-weight: 800; 
+    font-family: 'Space Mono', monospace; 
+    color: var(--accent-cyan); 
+    flex-shrink: 0; 
+    margin-top: 4px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .why-item textarea { 
+    min-height: 64px;
+    background: rgba(10, 14, 23, 0.4);
+  }
+
+  .why-connector { 
+    width: 2px; 
+    height: 16px; 
+    background: linear-gradient(var(--accent-cyan), var(--accent-violet)); 
+    margin-left: 17px; 
+    border-radius: 1px;
+    opacity: 0.4;
+  }
+
+  .root-cause-box { 
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.08), rgba(56, 189, 248, 0.04)); 
+    border: 1px solid rgba(167, 139, 250, 0.25); 
+    border-radius: var(--radius-lg); 
+    padding: var(--space-5); 
+    margin-top: var(--space-5);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-glow-violet);
+  }
+
+  .root-cause-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-violet), var(--accent-cyan));
+    opacity: 0.6;
+  }
+
+  .root-cause-label { 
+    font-size: 0.68rem; 
+    font-family: 'Space Mono', monospace; 
+    letter-spacing: 0.15em; 
+    color: var(--accent-violet); 
+    text-transform: uppercase; 
+    margin-bottom: var(--space-3);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ═══════════════════════════════════════════════
+     HISTORY TAB
+  ═══════════════════════════════════════════════ */
+  .history-header { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    margin-bottom: var(--space-5); 
+    flex-wrap: wrap; 
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+  }
+
+  .history-filters { 
+    display: flex; 
+    gap: var(--space-2); 
+  }
+
+  .filter-btn { 
+    padding: 8px 16px; 
+    border-radius: var(--radius-md); 
+    border: 1px solid var(--border-subtle); 
+    background: var(--bg-elevated); 
+    color: var(--text-tertiary); 
+    font-family: 'Inter', sans-serif; 
+    font-size: 0.78rem; 
+    font-weight: 600; 
+    cursor: pointer; 
+    transition: all 0.2s ease;
+  }
+
+  .filter-btn.active { 
+    border-color: var(--accent-cyan); 
+    color: var(--accent-cyan); 
+    background: rgba(56, 189, 248, 0.08);
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.06);
+  }
+
+  .filter-btn:hover:not(.active) {
+    border-color: var(--border-default);
+    color: var(--text-secondary);
+    background: rgba(148, 163, 184, 0.08);
+  }
+
+  .history-grid { 
+    display: grid; 
+    gap: var(--space-4); 
+  }
+
+  .history-card { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-subtle); 
+    border-radius: var(--radius-xl); 
+    padding: var(--space-5); 
+    position: relative; 
+    overflow: hidden; 
+    animation: fadeIn 0.35s ease; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .history-card:hover { 
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .history-card::before { 
+    content: ''; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    bottom: 0; 
+    width: 4px;
+    border-radius: var(--radius-xl) 0 0 var(--radius-xl);
+  }
+
+  .history-card.type-fishbone::before { 
+    background: linear-gradient(180deg, var(--accent-cyan), var(--accent-violet)); 
+  }
+
+  .history-card.type-5why::before { 
+    background: linear-gradient(180deg, var(--accent-violet), var(--accent-orange)); 
+  }
+
+  .history-card.type-pareto::before { 
+    background: linear-gradient(180deg, var(--accent-emerald), var(--accent-cyan)); 
+  }
+
+  .history-card.type-spc::before { 
+    background: linear-gradient(180deg, var(--accent-orange), var(--accent-rose)); 
+  }
+
+  .hc-top { 
+    display: flex; 
+    align-items: flex-start; 
+    justify-content: space-between; 
+    gap: var(--space-3); 
+    margin-bottom: var(--space-3); 
+  }
+
+  .hc-badge { 
+    font-size: 0.65rem; 
+    font-family: 'Space Mono', monospace; 
+    letter-spacing: 0.08em; 
+    padding: 4px 12px; 
+    border-radius: var(--radius-full); 
+    font-weight: 700;
+    display: inline-block;
+  }
+
+  .hc-badge.fishbone { 
+    background: rgba(56, 189, 248, 0.1); 
+    color: var(--accent-cyan); 
+    border: 1px solid rgba(56, 189, 248, 0.2); 
+  }
+
+  .hc-badge.why5 { 
+    background: rgba(167, 139, 250, 0.1); 
+    color: var(--accent-violet); 
+    border: 1px solid rgba(167, 139, 250, 0.2); 
+  }
+
+  .hc-badge.pareto { 
+    background: rgba(52, 211, 153, 0.1); 
+    color: var(--accent-emerald); 
+    border: 1px solid rgba(52, 211, 153, 0.2); 
+  }
+
+  .hc-badge.spc { 
+    background: rgba(251, 146, 60, 0.1); 
+    color: var(--accent-orange); 
+    border: 1px solid rgba(251, 146, 60, 0.2); 
+  }
+
+  .hc-group { 
+    font-size: 0.92rem; 
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    margin-bottom: 2px;
+  }
+
+  .hc-problem { 
+    font-size: 0.82rem; 
+    color: var(--text-secondary); 
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .hc-meta { 
+    display: flex; 
+    gap: var(--space-4); 
+    flex-wrap: wrap; 
+    margin-top: var(--space-3); 
+    padding-top: var(--space-3); 
+    border-top: 1px solid var(--border-subtle); 
+  }
+
+  .hc-meta-item { 
+    font-size: 0.74rem; 
+    color: var(--text-tertiary); 
+    display: flex; 
+    align-items: center; 
+    gap: 5px; 
+  }
+
+  .hc-actions { 
+    display: flex; 
+    gap: 6px; 
+    flex-shrink: 0; 
+  }
+
+  .btn-icon { 
+    width: 32px; 
+    height: 32px; 
+    border-radius: var(--radius-sm); 
+    border: 1px solid var(--border-subtle); 
+    background: var(--bg-elevated); 
+    color: var(--text-tertiary); 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 0.85rem; 
+    transition: all 0.2s ease;
+  }
+
+  .btn-icon:hover { 
+    border-color: var(--danger); 
+    color: var(--danger);
+    background: rgba(248, 113, 113, 0.08);
+    transform: scale(1.08);
+  }
+
+  .btn-icon.view:hover { 
+    border-color: var(--accent-cyan); 
+    color: var(--accent-cyan);
+    background: rgba(56, 189, 248, 0.08);
+  }
+
+  .empty-state { 
+    text-align: center; 
+    padding: 80px 24px; 
+    color: var(--text-tertiary);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    border-style: dashed;
+  }
+
+  .empty-state .es-icon { 
+    font-size: 3.5rem; 
+    margin-bottom: var(--space-4);
+    opacity: 0.6;
+    filter: grayscale(0.3);
+  }
+
+  .empty-state h3 { 
+    font-size: 1.1rem; 
+    margin-bottom: var(--space-2); 
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .empty-state p { 
+    font-size: 0.82rem;
+    max-width: 280px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ═══════════════════════════════════════════════
+     DETAIL MODAL — Glassmorphism
+  ═══════════════════════════════════════════════ */
+  .modal-overlay { 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0,0,0,0.6); 
+    z-index: 500; 
+    display: none; 
+    align-items: center; 
+    justify-content: center; 
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: var(--space-4);
+  }
+
+  .modal-overlay.open { 
+    display: flex; 
+    animation: modalIn 0.25s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .detail-modal { 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-default); 
+    border-radius: var(--radius-xl); 
+    padding: var(--space-6); 
+    width: 100%; 
+    max-width: 720px; 
+    max-height: 85vh; 
+    overflow-y: auto; 
+    position: relative;
+    box-shadow: var(--shadow-lg), 0 0 40px rgba(0,0,0,0.4);
+    animation: modalSlide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes modalSlide {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .detail-modal h2 { 
+    font-size: 1.15rem; 
+    font-weight: 800; 
+    margin-bottom: 4px;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+
+  .detail-modal .dm-group { 
+    font-size: 0.78rem; 
+    color: var(--text-tertiary); 
+    margin-bottom: var(--space-5); 
+    font-family: 'Space Mono', monospace;
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  .detail-section { 
+    margin-bottom: var(--space-5); 
+  }
+
+  .detail-section h4 { 
+    font-size: 0.68rem; 
+    font-family: 'Space Mono', monospace; 
+    letter-spacing: 0.15em; 
+    text-transform: uppercase; 
+    color: var(--accent-cyan); 
+    margin-bottom: var(--space-3);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .detail-causes { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 8px; 
+  }
+
+  .cause-chip { 
+    background: var(--bg-elevated); 
+    border: 1px solid var(--border-subtle); 
+    border-radius: var(--radius-full); 
+    padding: 5px 14px; 
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+  }
+
+  .cause-chip:hover {
+    border-color: var(--border-default);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+  }
+
+  .detail-why { 
+    display: flex; 
+    gap: 12px; 
+    margin-bottom: 10px;
+    padding: var(--space-3);
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    transition: border-color 0.2s ease;
+  }
+
+  .detail-why:hover {
+    border-color: var(--border-default);
+  }
+
+  .detail-why .wn { 
+    font-size: 0.72rem; 
+    font-family: 'Space Mono', monospace; 
+    color: var(--accent-cyan); 
+    min-width: 28px; 
+    margin-top: 2px;
+    font-weight: 700;
+  }
+
+  .detail-why .wa { 
+    font-size: 0.84rem; 
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .close-modal { 
+    position: absolute; 
+    top: var(--space-4); 
+    right: var(--space-4); 
+    width: 34px; 
+    height: 34px; 
+    border-radius: var(--radius-md); 
+    border: 1px solid var(--border-subtle); 
+    background: var(--bg-elevated); 
+    color: var(--text-tertiary); 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    z-index: 10;
+  }
+
+  .close-modal:hover { 
+    border-color: var(--danger); 
+    color: var(--danger);
+    background: rgba(248, 113, 113, 0.08);
+    transform: rotate(90deg);
+  }
+
+  /* ═══════════════════════════════════════════════
+     TOAST — Sleek
+  ═══════════════════════════════════════════════ */
+  .toast { 
+    position: fixed; 
+    bottom: 28px; 
+    right: 28px; 
+    background: var(--bg-card); 
+    border: 1px solid var(--border-default); 
+    border-radius: var(--radius-lg); 
+    padding: 14px 20px; 
+    font-size: 0.85rem; 
+    z-index: 1000; 
+    transform: translateY(100px) scale(0.95); 
+    opacity: 0; 
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+    max-width: 340px;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    font-weight: 500;
+  }
+
+  .toast.show { 
+    transform: translateY(0) scale(1); 
+    opacity: 1; 
+  }
+
+  .toast.success { 
+    border-color: rgba(52, 211, 153, 0.3); 
+    color: var(--success);
+    box-shadow: var(--shadow-md), 0 0 20px rgba(52, 211, 153, 0.1);
+  }
+
+  .toast.error { 
+    border-color: rgba(248, 113, 113, 0.3); 
+    color: var(--danger);
+    box-shadow: var(--shadow-md), 0 0 20px rgba(248, 113, 113, 0.1);
+  }
+
+  .toast.info { 
+    border-color: rgba(56, 189, 248, 0.3); 
+    color: var(--accent-cyan);
+    box-shadow: var(--shadow-md), 0 0 20px rgba(56, 189, 248, 0.1);
+  }
+
+  /* ═══════════════════════════════════════════════
+     SCROLLBAR — Custom Dark
+  ═══════════════════════════════════════════════ */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: var(--radius-full); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+
+  /* ═══════════════════════════════════════════════
+     RESPONSIVE
+  ═══════════════════════════════════════════════ */
+  @media(max-width: 768px) { 
+    .m-grid { grid-template-columns: 1fr 1fr; } 
+    .group-info { grid-template-columns: 1fr; } 
+    .app { padding: var(--space-4); }
+    header { flex-direction: column; gap: var(--space-3); text-align: center; }
+    .tabs { width: 100%; }
+    .tab { font-size: 0.75rem; padding: 8px 12px; }
+    .history-header { flex-direction: column; align-items: stretch; }
+    .history-filters { justify-content: center; }
+  }
+
+  @media(max-width: 500px) { 
+    .m-grid { grid-template-columns: 1fr; }
+    .action-bar { justify-content: center; }
+    .btn { flex: 1; justify-content: center; }
+  }
+
+
+  /* ═══════════════════════════════════════════════
+     LIGHT MODE VARIABLES & OVERRIDES
+  ═══════════════════════════════════════════════ */
+  body.light-mode {
+    --bg-deep: #f8fafc;
+    --bg-base: #ffffff;
+    --bg-elevated: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-input: #f8fafc;
+
+    --border-subtle: rgba(148, 163, 184, 0.25);
+    --border-default: rgba(148, 163, 184, 0.35);
+    --border-focus: rgba(2, 132, 199, 0.35);
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #64748b;
+    --text-muted: #94a3b8;
+
+    --accent-cyan: #0284c7;
+    --accent-cyan-glow: rgba(2, 132, 199, 0.12);
+    --accent-orange: #ea580c;
+    --accent-orange-glow: rgba(234, 88, 12, 0.12);
+    --accent-violet: #7c3aed;
+    --accent-violet-glow: rgba(124, 58, 237, 0.12);
+    --accent-emerald: #059669;
+    --accent-emerald-glow: rgba(5, 150, 105, 0.12);
+    --accent-amber: #d97706;
+    --accent-amber-glow: rgba(217, 119, 6, 0.12);
+    --accent-rose: #db2777;
+    --accent-rose-glow: rgba(219, 39, 119, 0.12);
+
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+
+    --m1: var(--accent-cyan);
+    --m2: var(--accent-orange);
+    --m3: var(--accent-violet);
+    --m4: var(--accent-emerald);
+    --m5: var(--accent-amber);
+    --m6: var(--accent-rose);
+  }
+
+  body.light-mode::before {
+    background: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(2, 132, 199, 0.04), transparent),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(124, 58, 237, 0.03), transparent);
+  }
+
+  body.light-mode::after {
+    background-image: 
+      linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px), 
+      linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  }
+
+  /* Light mode header */
+  body.light-mode header {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(148, 163, 184, 0.25);
+  }
+
+  body.light-mode header::after {
+    background: radial-gradient(circle at 50% 0%, rgba(2, 132, 199, 0.06), transparent 50%);
+  }
+
+  body.light-mode .header-title h1 {
+    background: linear-gradient(135deg, #0f172a 30%, #0284c7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  body.light-mode .badge {
+    background: rgba(2, 132, 199, 0.08);
+    border-color: rgba(2, 132, 199, 0.2);
+    color: var(--accent-cyan);
+  }
+
+  /* Light mode tabs */
+  body.light-mode .tabs {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+
+  body.light-mode .tab.active {
+    background: linear-gradient(135deg, rgba(2, 132, 199, 0.1), rgba(124, 58, 237, 0.06));
+    color: var(--accent-cyan);
+    border-color: rgba(2, 132, 199, 0.25);
+  }
+
+  /* Light mode cards */
+  body.light-mode .problem-card,
+  body.light-mode .why-card {
+    background: #ffffff;
+    border-color: rgba(148, 163, 184, 0.25);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  body.light-mode .problem-card:hover,
+  body.light-mode .why-card:hover {
+    border-color: var(--border-focus);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05), var(--shadow-glow-cyan);
+  }
+
+  /* Light mode inputs */
+  body.light-mode input[type="text"],
+  body.light-mode textarea,
+  body.light-mode select {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.35);
+    color: var(--text-primary);
+  }
+
+  body.light-mode input[type="text"]:focus,
+  body.light-mode textarea:focus,
+  body.light-mode select:focus {
+    background: #ffffff;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px var(--accent-cyan-glow), inset 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  body.light-mode input[type="text"]::placeholder,
+  body.light-mode textarea::placeholder {
+    color: var(--text-muted);
+  }
+
+  /* Light mode M cards */
+  body.light-mode .m-card {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+
+  body.light-mode .m-card:hover {
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  body.light-mode .cause-item input {
+    background: #ffffff;
+    border-color: rgba(148, 163, 184, 0.3);
+  }
+
+  body.light-mode .btn-add-cause {
+    border-color: rgba(148, 163, 184, 0.35);
+    color: var(--text-tertiary);
+  }
+
+  body.light-mode .btn-add-cause:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: rgba(2, 132, 199, 0.04);
+  }
+
+  /* Light mode buttons */
+  body.light-mode .btn-primary {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.2);
+  }
+
+  body.light-mode .btn-primary:hover {
+    box-shadow: 0 6px 24px rgba(2, 132, 199, 0.3);
+  }
+
+  body.light-mode .btn-save {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.2);
+  }
+
+  body.light-mode .btn-save:hover {
+    box-shadow: 0 6px 24px rgba(5, 150, 105, 0.3);
+  }
+
+  body.light-mode .btn-secondary {
+    background: #f1f5f9;
+    border-color: rgba(148, 163, 184, 0.35);
+    color: var(--text-secondary);
+  }
+
+  body.light-mode .btn-secondary:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: rgba(2, 132, 199, 0.06);
+  }
+
+  body.light-mode .btn-pdf {
+    background: linear-gradient(135deg, #e11d48, #be123c);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(225, 29, 72, 0.2);
+  }
+
+  /* Light mode fishbone wrap */
+  body.light-mode .fishbone-wrap {
+    background: #ffffff;
+    border-color: rgba(148, 163, 184, 0.25);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Light mode why chain */
+  body.light-mode .why-chain::before {
+    opacity: 0.2;
+  }
+
+  body.light-mode .why-num {
+    background: linear-gradient(135deg, rgba(2, 132, 199, 0.1), rgba(124, 58, 237, 0.06));
+    border-color: rgba(2, 132, 199, 0.2);
+    color: var(--accent-cyan);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  body.light-mode .why-item textarea {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.3);
+  }
+
+  body.light-mode .root-cause-box {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(2, 132, 199, 0.03));
+    border-color: rgba(124, 58, 237, 0.2);
+    box-shadow: 0 0 20px rgba(124, 58, 237, 0.08);
+  }
+
+  /* Light mode history */
+  body.light-mode .history-header {
+    background: #ffffff;
+    border-color: rgba(148, 163, 184, 0.25);
+  }
+
+  body.light-mode .filter-btn {
+    background: #f1f5f9;
+    border-color: rgba(148, 163, 184, 0.25);
+    color: var(--text-tertiary);
+  }
+
+  body.light-mode .filter-btn.active {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    background: rgba(2, 132, 199, 0.08);
+  }
+
+  body.light-mode .filter-btn:hover:not(.active) {
+    background: rgba(148, 163, 184, 0.12);
+  }
+
+  body.light-mode .history-card {
+    background: #ffffff;
+    border-color: rgba(148, 163, 184, 0.2);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  body.light-mode .history-card:hover {
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  body.light-mode .hc-meta {
+    border-color: rgba(148, 163, 184, 0.15);
+  }
+
+  body.light-mode .btn-icon {
+    background: #f1f5f9;
+    border-color: rgba(148, 163, 184, 0.25);
+    color: var(--text-tertiary);
+  }
+
+  body.light-mode .empty-state {
+    background: #ffffff;
+    border-color: rgba(148, 163, 184, 0.25);
+  }
+
+  /* Light mode modal */
+  body.light-mode .modal-overlay {
+    background: rgba(15, 23, 42, 0.4);
+  }
+
+  body.light-mode .detail-modal {
+    background: #ffffff;
+    border-color: rgba(148, 163, 184, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  }
+
+  body.light-mode .close-modal {
+    background: #f1f5f9;
+    border-color: rgba(148, 163, 184, 0.25);
+    color: var(--text-tertiary);
+  }
+
+  body.light-mode .detail-why {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+
+  body.light-mode .cause-chip {
+    background: #f1f5f9;
+    border-color: rgba(148, 163, 184, 0.2);
+    color: var(--text-secondary);
+  }
+
+  body.light-mode .cause-chip:hover {
+    border-color: rgba(148, 163, 184, 0.4);
+    color: var(--text-primary);
+  }
+
+  /* Light mode toast */
+  body.light-mode .toast {
+    background: #ffffff;
+    border-color: rgba(148, 163, 184, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  body.light-mode .toast.success {
+    border-color: rgba(5, 150, 105, 0.3);
+  }
+
+  body.light-mode .toast.error {
+    border-color: rgba(220, 38, 38, 0.3);
+  }
+
+  body.light-mode .toast.info {
+    border-color: rgba(2, 132, 199, 0.3);
+  }
+
+  /* Light mode scrollbar */
+  body.light-mode ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  body.light-mode ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+  }
+
+  body.light-mode ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Light mode btn-remove */
+  body.light-mode .btn-remove {
+    border-color: rgba(220, 38, 38, 0.2);
+    background: rgba(220, 38, 38, 0.06);
+    color: var(--danger);
+  }
+
+  body.light-mode .btn-remove:hover {
+    background: rgba(220, 38, 38, 0.12);
+    border-color: rgba(220, 38, 38, 0.4);
+  }
+
+
+
+  /* ═══════════════════════════════════════════════
+     PARETO CHART STYLES
+  ═══════════════════════════════════════════════ */
+  .pareto-row {
+    display: grid;
+    grid-template-columns: 1fr 140px 36px;
+    gap: var(--space-3);
+    align-items: center;
+    margin-bottom: var(--space-3);
+    animation: causeIn 0.25s ease;
+  }
+
+  .pareto-row input[type="text"] {
+    font-size: 0.85rem;
+  }
+
+  .pareto-row input[type="number"] {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.86rem;
+    outline: none;
+    transition: all 0.2s ease;
+    -moz-appearance: textfield;
+  }
+
+  .pareto-row input[type="number"]::-webkit-outer-spin-button,
+  .pareto-row input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .pareto-row input[type="number"]:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px var(--accent-cyan-glow);
+    background: rgba(26, 35, 50, 0.9);
+  }
+
+  body.light-mode .pareto-row input[type="number"] {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.35);
+    color: var(--text-primary);
+  }
+
+  body.light-mode .pareto-row input[type="number"]:focus {
+    background: #ffffff;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px var(--accent-cyan-glow);
+  }
+
+  .pareto-summary-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4) var(--space-5);
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .pareto-summary-card:hover {
+    border-color: var(--border-default);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .pareto-summary-card .ps-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: -0.02em;
+  }
+
+  .pareto-summary-card .ps-label {
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  body.light-mode .pareto-summary-card {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+
+  body.light-mode .pareto-summary-card:hover {
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+
+
+  /* ═══════════════════════════════════════════════
+     SPC / CONTROL CHART STYLES
+  ═══════════════════════════════════════════════ */
+  .spc-row {
+    display: grid;
+    grid-template-columns: 50px repeat(5, 1fr) 80px 80px 36px;
+    gap: var(--space-2);
+    align-items: center;
+    margin-bottom: var(--space-2);
+    animation: causeIn 0.25s ease;
+  }
+
+  .spc-row .sg-label {
+    font-size: 0.72rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--text-tertiary);
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .spc-row input[type="number"] {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 8px 10px;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    outline: none;
+    transition: all 0.2s ease;
+    text-align: center;
+    -moz-appearance: textfield;
+  }
+
+  .spc-row input[type="number"]::-webkit-outer-spin-button,
+  .spc-row input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .spc-row input[type="number"]:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px var(--accent-cyan-glow);
+    background: rgba(26, 35, 50, 0.9);
+  }
+
+  .spc-row .stat-readonly {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 8px 4px;
+    font-size: 0.78rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent-cyan);
+    text-align: center;
+    font-weight: 700;
+    min-height: 33px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .spc-header-row {
+    display: grid;
+    grid-template-columns: 50px repeat(5, 1fr) 80px 80px 36px;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  .spc-header-row span {
+    font-size: 0.65rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent-cyan);
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  body.light-mode .spc-row input[type="number"] {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.35);
+    color: var(--text-primary);
+  }
+
+  body.light-mode .spc-row input[type="number"]:focus {
+    background: #ffffff;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 3px var(--accent-cyan-glow);
+  }
+
+  body.light-mode .spc-row .stat-readonly {
+    background: #f1f5f9;
+    border-color: rgba(148, 163, 184, 0.2);
+    color: var(--accent-cyan);
+  }
+
+  .spc-stat-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4) var(--space-4);
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .spc-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-violet));
+    opacity: 0.6;
+  }
+
+  .spc-stat-card:hover {
+    border-color: var(--border-default);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .spc-stat-card .ss-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .spc-stat-card .ss-value.alert {
+    color: var(--danger);
+  }
+
+  .spc-stat-card .ss-value.ok {
+    color: var(--success);
+  }
+
+  .spc-stat-card .ss-label {
+    font-size: 0.68rem;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  body.light-mode .spc-stat-card {
+    background: #f8fafc;
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+
+  body.light-mode .spc-stat-card:hover {
+    border-color: rgba(148, 163, 184, 0.35);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .spc-legend {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    margin-top: var(--space-3);
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
+  .spc-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .spc-legend .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="header-title">
+      <h1>🐟 Fishbone & 5Why Analyzer</h1>
+      <p>// Quality Root Cause Analysis</p>
+    </div>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Ganti Tema">
+      <span class="theme-icon" id="themeIcon">☀️</span>
+      <span class="theme-label" id="themeLabel">Light</span>
+    </button>
+    <div class="badge">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--accent-emerald);display:inline-block;animation:pulse 2s infinite;"></span>
+      PT. INDORAMA POLYPET INDONESIA
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('fishbone', this)">🦴 Fishbone / 6M</button>
+    <button class="tab" onclick="switchTab('whys', this)">❓ 5 Why Analysis</button>
+    <button class="tab" onclick="switchTab('pareto', this)">📊 Pareto Chart</button>
+    <button class="tab" onclick="switchTab('spc', this)">📈 Control Chart (SPC)</button>
+    <button class="tab" onclick="switchTab('history', this); loadHistory()">🗂 Riwayat Data</button>
+  </div>
+
+  <!-- ===== FISHBONE TAB ===== -->
+  <div id="fishbone" class="panel active">
+    <div class="problem-card">
+      <div class="section-label">Identifikasi Kelompok & Masalah</div>
+      <div class="group-info">
+        <div class="field-group">
+          <label>Nama Kelompok / Tim</label>
+          <input type="text" id="groupName" placeholder="Contoh: Tim QCC Produksi A">
+        </div>
+        <div class="field-group">
+          <label>Tanggal Analisis</label>
+          <input type="text" id="analysisDate" placeholder="Contoh: April 2025">
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Pernyataan Masalah (Effect)</label>
+        <textarea id="problemStatement" placeholder="Deskripsikan masalah utama yang akan dianalisis..."></textarea>
+      </div>
+    </div>
+
+    <div style="margin-bottom:var(--space-3);">
+      <div class="section-label">Faktor Penyebab — 6M</div>
+      <p style="font-size:0.8rem;color:var(--text-tertiary);margin-bottom:var(--space-4);line-height:1.5;">Tambahkan penyebab potensial pada setiap kategori yang relevan. Semakin spesifik, semakin baik analisisnya.</p>
+    </div>
+    <div class="m-grid" id="mGrid"></div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="drawFishbone()">📊 Tampilkan Diagram</button>
+      <button class="btn btn-save" onclick="saveFishbone()" id="btnSaveFishbone">💾 Simpan</button>
+      <button class="btn btn-pdf" onclick="exportFishbonePDF()">📄 Export PDF</button>
+      <button class="btn btn-secondary" onclick="downloadFishboneTransparent()" title="Download diagram tanpa background">🖼️ Download PNG Transparan</button>
+      <button class="btn btn-secondary" onclick="clearAll()">🗑 Reset</button>
+    </div>
+
+    <div class="fishbone-wrap" id="fishboneWrap" style="display:none;">
+      <div class="section-label">Fishbone Diagram</div>
+      <div class="fishbone-svg-container"><svg id="fishboneSVG" width="960" height="480"></svg></div>
+    </div>
+
+  </div>
+
+  <!-- ===== 5WHY TAB ===== -->
+  <div id="whys" class="panel">
+    <div class="why-card">
+      <div class="section-label">5 Why Analysis</div>
+      <div class="group-info" style="margin-bottom:var(--space-4);">
+        <div class="field-group">
+          <label>Nama Kelompok / Tim</label>
+          <input type="text" id="whyGroup" placeholder="Nama tim/kelompok">
+        </div>
+        <div class="field-group">
+          <label>Masalah yang Dianalisis</label>
+          <input type="text" id="whyProblem" placeholder="Masalah / gejala awal">
+        </div>
+      </div>
+      <div class="why-chain" id="whyChain"></div>
+      <div class="root-cause-box">
+        <div class="root-cause-label">🎯 Root Cause (Akar Penyebab)</div>
+        <textarea id="rootCause" placeholder="Tuliskan akar penyebab yang ditemukan..." style="min-height:70px;"></textarea>
+      </div>
+      <div class="action-bar">
+        <button class="btn btn-save" onclick="save5Why()" id="btnSave5Why">💾 Simpan</button>
+        <button class="btn btn-pdf" onclick="export5WhyPDF()">📄 Export PDF</button>
+        <button class="btn btn-secondary" onclick="clearWhys()">🗑 Reset</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ===== PARETO TAB ===== -->
+  <div id="pareto" class="panel">
+    <div class="problem-card">
+      <div class="section-label">Identifikasi Kelompok & Periode</div>
+      <div class="group-info">
+        <div class="field-group">
+          <label>Nama Kelompok / Tim</label>
+          <input type="text" id="paretoGroup" placeholder="Contoh: Tim QCC Produksi A">
+        </div>
+        <div class="field-group">
+          <label>Periode Analisis</label>
+          <input type="text" id="paretoPeriod" placeholder="Contoh: Mei 2026">
+        </div>
+      </div>
+      <div class="field-group" style="margin-bottom:var(--space-4);">
+        <label>Judul Analisis Pareto</label>
+        <input type="text" id="paretoTitle" placeholder="Contoh: Defect Produk Bulan Mei 2026">
+      </div>
+    </div>
+
+    <div class="problem-card">
+      <div class="section-label">Input Data Defect / Masalah</div>
+      <p style="font-size:0.8rem;color:var(--text-tertiary);margin-bottom:var(--space-4);line-height:1.5;">Masukkan kategori masalah beserta frekuensi/jumlah kejadian. Data akan otomatis diurutkan dan dihitung persentase kumulatifnya.</p>
+      <div id="paretoRows"></div>
+      <button class="btn-add-cause" onclick="addParetoRow()" style="margin-top:var(--space-4);">+ Tambah Kategori</button>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="drawPareto()">📊 Tampilkan Pareto Chart</button>
+      <button class="btn btn-save" onclick="savePareto()" id="btnSavePareto">💾 Simpan</button>
+      <button class="btn btn-pdf" onclick="exportParetoPDF()">📄 Export PDF</button>
+      <button class="btn btn-secondary" onclick="downloadParetoTransparent()" title="Download chart tanpa background">🖼️ Download PNG Transparan</button>
+      <button class="btn btn-secondary" onclick="clearPareto()">🗑 Reset</button>
+    </div>
+
+    <div class="fishbone-wrap" id="paretoWrap" style="display:none;">
+      <div class="section-label">Pareto Chart — 80/20 Rule</div>
+      <div style="position:relative;width:100%;max-width:960px;margin:0 auto;">
+        <canvas id="paretoCanvas" width="960" height="520" style="width:100%;height:auto;border-radius:var(--radius-md);"></canvas>
+      </div>
+      <div id="paretoSummary" style="margin-top:var(--space-5);display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-4);"></div>
+    </div>
+  </div>
+
+
+  <!-- ===== SPC TAB ===== -->
+  <div id="spc" class="panel">
+    <div class="problem-card">
+      <div class="section-label">Identifikasi Parameter & Spec Limit</div>
+      <div class="group-info">
+        <div class="field-group">
+          <label>Nama Kelompok / Tim</label>
+          <input type="text" id="spcGroup" placeholder="Contoh: Tim QCC Produksi A">
+        </div>
+        <div class="field-group">
+          <label>Periode / Shift</label>
+          <input type="text" id="spcPeriod" placeholder="Contoh: Shift 1–3, Mei 2026">
+        </div>
+      </div>
+      <div class="group-info">
+        <div class="field-group">
+          <label>Parameter yang Diukur</label>
+          <input type="text" id="spcParameter" placeholder="Contoh: Diameter Film (mm)">
+        </div>
+        <div class="field-group">
+          <label>Ukuran Subgroup (n)</label>
+          <select id="spcSubgroupSize" onchange="initSpcRows()">
+            <option value="3">3 sample</option>
+            <option value="4">4 sample</option>
+            <option value="5" selected>5 sample</option>
+          </select>
+        </div>
+      </div>
+      <div class="group-info" style="margin-top:var(--space-3);">
+        <div class="field-group">
+          <label>USL (Upper Spec Limit)</label>
+          <input type="number" id="spcUSL" placeholder="Contoh: 10.5" step="any">
+        </div>
+        <div class="field-group">
+          <label>LSL (Lower Spec Limit)</label>
+          <input type="number" id="spcLSL" placeholder="Contoh: 9.5" step="any">
+        </div>
+        <div class="field-group">
+          <label>Target / Nominal</label>
+          <input type="number" id="spcTarget" placeholder="Contoh: 10.0" step="any">
+        </div>
+      </div>
+    </div>
+
+    <div class="problem-card">
+      <div class="section-label">Input Data Subgroup</div>
+      <p style="font-size:0.8rem;color:var(--text-tertiary);margin-bottom:var(--space-4);line-height:1.5;">Setiap baris = 1 subgroup. Masukkan nilai measurement untuk setiap sample dalam subgroup. X-bar dan R akan dihitung otomatis.</p>
+      <div id="spcRows"></div>
+      <button class="btn-add-cause" onclick="addSpcRow()" style="margin-top:var(--space-4);">+ Tambah Subgroup</button>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-primary" onclick="drawSpc()">📈 Tampilkan Control Chart</button>
+      <button class="btn btn-save" onclick="saveSpc()" id="btnSaveSpc">💾 Simpan</button>
+      <button class="btn btn-pdf" onclick="exportSpcPDF()">📄 Export PDF</button>
+      <button class="btn btn-secondary" onclick="downloadSpcTransparent()" title="Download chart tanpa background">🖼️ Download PNG Transparan</button>
+      <button class="btn btn-secondary" onclick="clearSpc()">🗑 Reset</button>
+    </div>
+
+    <div class="fishbone-wrap" id="spcWrap" style="display:none;">
+      <div class="section-label">Statistik Proses</div>
+      <div id="spcStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--space-4);margin-bottom:var(--space-6);"></div>
+
+      <div class="section-label">X-bar Chart (Rata-rata Subgroup)</div>
+      <div style="position:relative;width:100%;max-width:960px;margin:0 auto;">
+        <canvas id="spcXbarCanvas" width="960" height="400" style="width:100%;height:auto;border-radius:var(--radius-md);"></canvas>
+      </div>
+
+      <div class="section-label" style="margin-top:var(--space-6);">R Chart (Range Subgroup)</div>
+      <div style="position:relative;width:100%;max-width:960px;margin:0 auto;">
+        <canvas id="spcRCanvas" width="960" height="320" style="width:100%;height:auto;border-radius:var(--radius-md);"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HISTORY TAB ===== -->
+  <div id="history" class="panel">
+    <div class="history-header">
+      <div class="section-label" style="margin:0;">Riwayat Data Tersimpan</div>
+      <div style="display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap;">
+        <div class="history-filters">
+          <button class="filter-btn active" onclick="filterHistory('all', this)">Semua</button>
+          <button class="filter-btn" onclick="filterHistory('fishbone', this)">🦴 Fishbone</button>
+          <button class="filter-btn" onclick="filterHistory('5why', this)">❓ 5Why</button>
+          <button class="filter-btn" onclick="filterHistory('pareto', this)">📊 Pareto</button>
+          <button class="filter-btn" onclick="filterHistory('spc', this)">📈 SPC</button>
+        </div>
+        <button class="btn btn-secondary" onclick="loadHistory()" style="padding:8px 16px;font-size:0.78rem;height:fit-content;">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="history-grid" id="historyGrid">
+      <div class="empty-state">
+        <div class="es-icon">📭</div>
+        <h3>Belum Ada Data</h3>
+        <p>Simpan hasil analisis dari tab Fishbone atau 5Why untuk melihat riwayat di sini</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="detail-modal" id="detailContent">
+    <button class="close-modal" onclick="closeDetailModal()">✕</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+// LOCAL STORAGE PERSISTENCE
+// ════════════════════════════════════════════════════
+const LS_KEY = 'fishbone_5why_history';
+
+function loadFromStorage() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+}
+
+function saveToStorage(arr) {
+  localStorage.setItem(LS_KEY, JSON.stringify(arr));
+}
+
+// ════════════════════════════════════════════════════
+// SAVE FISHBONE
+// ════════════════════════════════════════════════════
+window.saveFishbone = function() {
+  syncAllCauses();
+  const problem = document.getElementById('problemStatement').value.trim();
+  const group = document.getElementById('groupName').value.trim();
+  if (!problem) { showToast('Isi pernyataan masalah terlebih dahulu!', 'error'); return; }
+
+  const data = {
+    id: Date.now().toString(),
+    col: 'fishbone',
+    type: 'fishbone',
+    group: group || '-',
+    date: document.getElementById('analysisDate').value.trim(),
+    problem,
+    causes: JSON.parse(JSON.stringify(mCauses)),
+    savedAt: Date.now()
+  };
+
+  const history = loadFromStorage();
+  history.unshift(data);
+  saveToStorage(history);
+  showToast('✓ Data Fishbone berhasil disimpan!', 'success');
+};
+
+// ════════════════════════════════════════════════════
+// SAVE 5WHY
+// ════════════════════════════════════════════════════
+window.save5Why = function() {
+  const tAs = document.querySelectorAll('#whyChain textarea');
+  tAs.forEach((ta, i) => { whyAnswers[i] = ta.value.trim(); });
+
+  const problem = document.getElementById('whyProblem').value.trim();
+  if (!problem) { showToast('Isi masalah terlebih dahulu!', 'error'); return; }
+
+  const data = {
+    id: Date.now().toString(),
+    col: '5why',
+    type: '5why',
+    group: document.getElementById('whyGroup').value.trim() || '-',
+    problem,
+    whys: [...whyAnswers],
+    rootCause: document.getElementById('rootCause').value.trim(),
+    savedAt: Date.now()
+  };
+
+  const history = loadFromStorage();
+  history.unshift(data);
+  saveToStorage(history);
+  showToast('✓ Data 5Why berhasil disimpan!', 'success');
+};
+
+// ════════════════════════════════════════════════════
+// LOAD HISTORY
+// ════════════════════════════════════════════════════
+let allHistory = [];
+let currentFilter = 'all';
+
+window.loadHistory = function() {
+  allHistory = loadFromStorage();
+  renderHistory();
+};
+
+window.filterHistory = function(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHistory();
+};
+
+function renderHistory() {
+  const grid = document.getElementById('historyGrid');
+  const filtered = currentFilter === 'all' ? allHistory : allHistory.filter(h => h.col === currentFilter || h.type === currentFilter);
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div class="es-icon">📭</div><h3>Belum ada data</h3><p>Simpan hasil analisis dari tab Fishbone atau 5Why untuk melihat riwayat di sini</p></div>`;
+    return;
+  }
+  grid.innerHTML = filtered.map(h => buildHistoryCard(h)).join('');
+}
+
+function buildHistoryCard(h) {
+  const isFishbone = h.col === 'fishbone';
+  const isPareto = h.col === 'pareto';
+  const isSpc = h.col === 'spc';
+  const date = h.savedAt ? new Date(h.savedAt).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' }) : '-';
+  const causesCount = isFishbone ? Object.values(h.causes || {}).flat().length : null;
+  const whysFilled = (!isFishbone && !isPareto && !isSpc) ? (h.whys || []).filter(w => w).length : null;
+  const paretoCats = isPareto ? (h.data || []).length : null;
+  const spcSubgroups = isSpc ? (h.data || []).length : null;
+
+  return `
+    <div class="history-card ${isFishbone ? 'type-fishbone' : isPareto ? 'type-pareto' : isSpc ? 'type-spc' : 'type-5why'}">
+      <div class="hc-top">
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span class="hc-badge ${isFishbone ? 'fishbone' : isPareto ? 'pareto' : isSpc ? 'spc' : 'why5'}">${isFishbone ? '🦴 FISHBONE' : isPareto ? '📊 PARETO' : isSpc ? '📈 SPC' : '❓ 5WHY'}</span>
+          </div>
+          <div class="hc-group">${h.group || '-'}</div>
+          <div class="hc-problem">${h.problem || '-'}</div>
+        </div>
+        <div class="hc-actions">
+          <button class="btn-icon view" onclick="showDetail('${h.id}')" title="Lihat Detail">👁</button>
+          <button class="btn-icon" onclick="exportRecordPDF('${h.id}')" title="Export PDF" style="color:#f87171;border-color:rgba(248,113,113,0.2);">📄</button>
+          <button class="btn-icon" onclick="deleteRecord('${h.id}')" title="Hapus">🗑</button>
+        </div>
+      </div>
+      <div class="hc-meta">
+        <div class="hc-meta-item">📅 ${date}</div>
+        ${isFishbone ? `<div class="hc-meta-item">📌 ${causesCount} penyebab</div>` : isPareto ? `<div class="hc-meta-item">📊 ${paretoCats} kategori</div><div class="hc-meta-item">📈 ${(h.total || 0).toLocaleString('id-ID')} total</div>` : isSpc ? `<div class="hc-meta-item">📈 ${spcSubgroups} subgroup (n=${h.subgroupSize || 5})</div><div class="hc-meta-item">${h.stats && h.stats.cpk !== null ? '🎯 Cpk ' + h.stats.cpk.toFixed(2) : ''}</div>` : `<div class="hc-meta-item">❓ ${whysFilled}/5 why</div>`}
+        ${!isFishbone && !isPareto && !isSpc && h.rootCause ? `<div class="hc-meta-item">🎯 Root cause ditetapkan</div>` : ''}
+      </div>
+    </div>`;
+}
+
+window.showDetail = function(id) {
+  const h = allHistory.find(x => x.id === id);
+  if (!h) return;
+  const isFb = h.col === 'fishbone';
+  const isPareto = h.col === 'pareto';
+  const isSpc = h.col === 'spc';
+  const date = h.savedAt ? new Date(h.savedAt).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
+
+  let body = `
+    <button class="close-modal" onclick="closeDetailModal()">✕</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+      <span class="hc-badge ${isFb ? 'fishbone' : isPareto ? 'pareto' : isSpc ? 'spc' : 'why5'}">${isFb ? '🦴 FISHBONE' : isPareto ? '📊 PARETO' : isSpc ? '📈 SPC' : '❓ 5WHY'}</span>
+    </div>
+    <h2>${h.problem || '-'}</h2>
+    <div class="dm-group"><span>📁 ${h.group || '-'}</span><span>📅 ${date}</span></div>`;
+
+  if (isSpc) {
+    body += `<div class="detail-section"><h4>📈 Statistik Proses</h4>`;
+    const st = h.stats || {};
+    body += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;">`;
+    body += `<div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.2rem;font-weight:800;color:var(--accent-cyan);font-family:'Space Mono',monospace;">${st.xbarBar !== undefined ? st.xbarBar.toFixed(3) : '-'}</div><div style="font-size:0.65rem;color:var(--text-tertiary);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">X̄ Grand Mean</div></div>`;
+    body += `<div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.2rem;font-weight:800;color:var(--accent-cyan);font-family:'Space Mono',monospace;">${st.rBar !== undefined ? st.rBar.toFixed(3) : '-'}</div><div style="font-size:0.65rem;color:var(--text-tertiary);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">R̄ Mean Range</div></div>`;
+    body += `<div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.2rem;font-weight:800;color:var(--accent-cyan);font-family:'Space Mono',monospace;">${st.cp !== null ? st.cp.toFixed(2) : '-'}</div><div style="font-size:0.65rem;color:var(--text-tertiary);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">Cp</div></div>`;
+    body += `<div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:10px;padding:12px;text-align:center;"><div style="font-size:1.2rem;font-weight:800;color:${st.cpk !== null && st.cpk >= 1.33 ? 'var(--success)' : st.cpk !== null && st.cpk >= 1.0 ? 'var(--warning)' : 'var(--danger)'};font-family:'Space Mono',monospace;">${st.cpk !== null ? st.cpk.toFixed(2) : '-'}</div><div style="font-size:0.65rem;color:var(--text-tertiary);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">Cpk ${st.cpk !== null ? (st.cpk >= 1.33 ? '✓' : st.cpk >= 1.0 ? '⚠' : '✗') : ''}</div></div>`;
+    body += `</div>`;
+    body += `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+      <thead><tr style="border-bottom:1px solid var(--border-default);">
+        <th style="text-align:center;padding:6px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.65rem;">SG</th>
+        <th style="text-align:right;padding:6px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.65rem;">X̄</th>
+        <th style="text-align:right;padding:6px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.65rem;">R</th>
+        <th style="text-align:center;padding:6px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.65rem;">STATUS</th>
+      </tr></thead><tbody>`;
+    (h.data || []).forEach(d => {
+      const oocX = d.xbar > st.uclX || d.xbar < st.lclX;
+      const oocR = d.r > st.uclR || d.r < st.lclR;
+      const ooc = oocX || oocR;
+      body += `<tr style="border-bottom:1px solid var(--border-subtle);">
+        <td style="padding:6px;text-align:center;color:var(--text-secondary);font-family:'Space Mono',monospace;">${d.sg}</td>
+        <td style="padding:6px;text-align:right;color:${oocX ? 'var(--danger)' : 'var(--text-primary)'};font-weight:${oocX ? 700 : 400};">${d.xbar.toFixed(3)}</td>
+        <td style="padding:6px;text-align:right;color:${oocR ? 'var(--danger)' : 'var(--text-primary)'};font-weight:${oocR ? 700 : 400};">${d.r.toFixed(3)}</td>
+        <td style="padding:6px;text-align:center;"><span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:0.7rem;font-weight:700;${ooc ? 'background:rgba(248,113,113,0.1);color:var(--danger);border:1px solid rgba(248,113,113,0.2);' : 'background:rgba(52,211,153,0.1);color:var(--success);border:1px solid rgba(52,211,153,0.2);'}">${ooc ? '⚠ OOC' : '✓ OK'}</span></td>
+      </tr>`;
+    });
+    body += `</tbody></table></div>`;
+    body += `<div style="margin-top:12px;font-size:0.75rem;color:var(--text-tertiary);">Subgroup size: n=${h.subgroupSize || 5} | UCL X̄: ${st.uclX !== undefined ? st.uclX.toFixed(3) : '-'} | LCL X̄: ${st.lclX !== undefined ? st.lclX.toFixed(3) : '-'} | UCL R: ${st.uclR !== undefined ? st.uclR.toFixed(3) : '-'} | LCL R: ${st.lclR !== undefined ? st.lclR.toFixed(3) : '-'}</div>`;
+    body += `</div>`;
+  } else if (isPareto) {
+    body += `<div class="detail-section"><h4>📊 Data Pareto</h4>`;
+    body += `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+      <thead><tr style="border-bottom:1px solid var(--border-default);">
+        <th style="text-align:left;padding:8px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.7rem;">NO</th>
+        <th style="text-align:left;padding:8px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.7rem;">KATEGORI</th>
+        <th style="text-align:right;padding:8px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.7rem;">JUMLAH</th>
+        <th style="text-align:right;padding:8px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.7rem;">%</th>
+        <th style="text-align:right;padding:8px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.7rem;">KUMULATIF</th>
+        <th style="text-align:center;padding:8px;color:var(--accent-cyan);font-family:'Space Mono',monospace;font-size:0.7rem;">STATUS</th>
+      </tr></thead><tbody>`;
+    (h.data || []).forEach((d, i) => {
+      const isVital = d.cumPct <= 80;
+      body += `<tr style="border-bottom:1px solid var(--border-subtle);">
+        <td style="padding:8px;color:var(--text-secondary);">${i+1}</td>
+        <td style="padding:8px;color:var(--text-primary);font-weight:600;">${d.cat}</td>
+        <td style="padding:8px;text-align:right;color:var(--text-secondary);font-family:'Space Mono',monospace;">${d.val.toLocaleString('id-ID')}</td>
+        <td style="padding:8px;text-align:right;color:var(--text-secondary);font-family:'Space Mono',monospace;">${d.pct.toFixed(1)}%</td>
+        <td style="padding:8px;text-align:right;color:var(--text-secondary);font-family:'Space Mono',monospace;">${d.cumPct.toFixed(1)}%</td>
+        <td style="padding:8px;text-align:center;"><span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:0.7rem;font-weight:700;${isVital ? 'background:rgba(56,189,248,0.1);color:var(--accent-cyan);border:1px solid rgba(56,189,248,0.2);' : 'background:var(--bg-elevated);color:var(--text-muted);border:1px solid var(--border-subtle);'}">${isVital ? 'Vital Few' : 'Trivial Many'}</span></td>
+      </tr>`;
+    });
+    body += `</tbody></table></div>`;
+    body += `</div>`;
+    if (h.total) {
+      body += `<div class="detail-section"><h4>📈 Ringkasan</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:1.4rem;font-weight:800;color:var(--accent-cyan);font-family:'Space Mono',monospace;">${h.total.toLocaleString('id-ID')}</div>
+            <div style="font-size:0.7rem;color:var(--text-tertiary);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">Total Kejadian</div>
+          </div>
+          <div style="background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:10px;padding:14px;text-align:center;">
+            <div style="font-size:1.4rem;font-weight:800;color:var(--accent-cyan);font-family:'Space Mono',monospace;">${(h.data || []).filter(d => d.cumPct <= 80).length}</div>
+            <div style="font-size:0.7rem;color:var(--text-tertiary);margin-top:4px;text-transform:uppercase;letter-spacing:0.08em;">Vital Few</div>
+          </div>
+        </div>
+      </div>`;
+    }
+  } else if (isFb) {
+    const M_DATA_DETAIL = [
+      {key:'Man',title:'Man'},{key:'Machine',title:'Machine'},{key:'Method',title:'Method'},
+      {key:'Material',title:'Material'},{key:'Measurement',title:'Measurement'},{key:'Mother Nature',title:'Mother Nature'}
+    ];
+    body += `<div class="detail-section"><h4>Penyebab per Kategori 6M</h4>`;
+    M_DATA_DETAIL.forEach(m => {
+      const causes = (h.causes || {})[m.key] || [];
+      if (causes.length > 0) {
+        body += `<div style="margin-bottom:14px;"><div style="font-size:0.75rem;color:var(--text-tertiary);margin-bottom:8px;font-weight:600;">${m.title}</div>
+        <div class="detail-causes">${causes.map(c => `<span class="cause-chip">${c}</span>`).join('')}</div></div>`;
+      }
+    });
+    body += `</div>`;
+  } else {
+    body += `<div class="detail-section"><h4>Rantai 5 Why</h4>`;
+    (h.whys || []).forEach((w, i) => {
+      if (w) body += `<div class="detail-why"><div class="wn">W${i+1}</div><div class="wa">${w}</div></div>`;
+    });
+    body += `</div>`;
+    if (h.rootCause) {
+      body += `<div class="detail-section"><h4>🎯 Root Cause</h4><div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);border-radius:10px;padding:14px;font-size:0.88rem;line-height:1.6;color:var(--text-secondary);">${h.rootCause}</div></div>`;
+    }
+  }
+
+  document.getElementById('detailContent').innerHTML = body;
+  document.getElementById('detailModal').classList.add('open');
+};
+
+window.closeDetailModal = function() {
+  document.getElementById('detailModal').classList.remove('open');
+};
+
+window.deleteRecord = function(id) {
+  if (!confirm('Hapus data ini?')) return;
+  const history = loadFromStorage().filter(h => h.id !== id);
+  saveToStorage(history);
+  allHistory = history;
+  renderHistory();
+  showToast('Data berhasil dihapus', 'success');
+};
+
+// ════════════════════════════════════════════════════
+// 6M DATA & LOGIC
+// ════════════════════════════════════════════════════
+const M_DATA = [
+  { id:1, key:'Man',           icon:'👷', title:'Man (Manusia)',           sub:'Operator, keterampilan, pelatihan' },
+  { id:2, key:'Machine',       icon:'⚙️', title:'Machine (Mesin)',         sub:'Peralatan, maintenance, keandalan' },
+  { id:3, key:'Method',        icon:'📋', title:'Method (Metode)',         sub:'SOP, prosedur, instruksi kerja' },
+  { id:4, key:'Material',      icon:'📦', title:'Material (Bahan)',        sub:'Bahan baku, kualitas, supplier' },
+  { id:5, key:'Measurement',   icon:'📏', title:'Measurement (Pengukuran)',sub:'Kalibrasi, alat ukur, data' },
+  { id:6, key:'Mother Nature', icon:'🌿', title:'Mother Nature (Lingkungan)',sub:'Suhu, kelembaban, kondisi kerja' },
+];
+window.mCauses = { Man:[], Machine:[], Method:[], Material:[], Measurement:[], 'Mother Nature':[] };
+window.whyAnswers = ['','','','',''];
+
+window.initMGrid = function() {
+  const grid = document.getElementById('mGrid'); grid.innerHTML = '';
+  M_DATA.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'm-card'; card.setAttribute('data-m', m.id);
+    card.innerHTML = `
+      <div class="m-header"><div class="m-icon">${m.icon}</div>
+        <div><div class="m-title">${m.title}</div><div class="m-subtitle">${m.sub}</div></div></div>
+      <div class="cause-list" id="causes-${m.key.replace(/ /g,'')}"></div>
+      <button class="btn-add-cause" onclick="addCause('${m.key}')">+ Tambah Penyebab</button>`;
+    grid.appendChild(card);
+    addCause(m.key);
+  });
+};
+
+window.addCause = function(mKey) {
+  const listId = 'causes-' + mKey.replace(/ /g, '');
+  const list = document.getElementById(listId);
+  const idx = list.children.length;
+  const item = document.createElement('div'); item.className = 'cause-item';
+  item.innerHTML = `<input type="text" placeholder="Penyebab ${idx+1}..." onchange="syncCauses('${mKey}')">
+    <button class="btn-remove" onclick="removeCause(this,'${mKey}')">✕</button>`;
+  list.appendChild(item);
+  // Focus new input
+  setTimeout(() => item.querySelector('input').focus(), 50);
+};
+
+window.removeCause = function(btn, mKey) { btn.closest('.cause-item').remove(); syncCauses(mKey); };
+window.syncCauses = function(mKey) {
+  const inputs = document.querySelectorAll(`#causes-${mKey.replace(/ /g,'')} input`);
+  mCauses[mKey] = Array.from(inputs).map(i => i.value.trim()).filter(v => v);
+};
+window.syncAllCauses = function() { M_DATA.forEach(m => syncCauses(m.key)); };
+
+window.initWhyChain = function() {
+  const chain = document.getElementById('whyChain'); chain.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    if (i > 1) { const c = document.createElement('div'); c.className='why-connector'; chain.appendChild(c); }
+    const item = document.createElement('div'); item.className = 'why-item';
+    item.innerHTML = `<div class="why-num">W${i}</div><div style="flex:1;">
+      <label style="font-size:0.75rem;color:var(--text-tertiary);display:block;margin-bottom:6px;font-weight:600;">${i===1?'Mengapa masalah ini terjadi?':'Mengapa ('+i+')?'}</label>
+      <textarea placeholder="Jawaban why ke-${i}..." onchange="whyAnswers[${i-1}]=this.value"></textarea></div>`;
+    chain.appendChild(item);
+  }
+};
+
+// ════════════════════════════════════════════════════
+// FISHBONE SVG — Refined Visual
+// ════════════════════════════════════════════════════
+window.drawFishbone = function() {
+  syncAllCauses();
+  const problem = document.getElementById('problemStatement').value.trim() || 'Masalah Utama';
+  const svg = document.getElementById('fishboneSVG');
+  const W=960, H=480; svg.setAttribute('width',W); svg.setAttribute('height',H); svg.innerHTML='';
+
+  // Background
+  rect(svg,0,0,W,H,'#0d1117',0);
+
+  const colors=['#38bdf8','#fb923c','#a78bfa','#34d399','#fbbf24','#f472b6'];
+  const spineY=H/2, spineStart=80, spineEnd=W-180;
+
+  // Spine with glow
+  line(svg,spineStart,spineY,spineEnd,spineY,'#1e293b',3);
+  line(svg,spineStart,spineY,spineEnd,spineY,'#334155',1);
+
+  // Effect box
+  const effX=spineEnd+10, effW=155, effH=70, effY=spineY-effH/2;
+  rectR(svg,effX,effY,effW,effH,'#131820','#38bdf8',2,12);
+  // Inner glow for effect
+  rectR(svg,effX+2,effY+2,effW-4,effH-4,'transparent','rgba(56,189,248,0.08)',1,10);
+  wrapText(svg,problem,effX+effW/2,spineY,'#38bdf8','0.72rem',effW-20);
+
+  // Arrow head
+  polygon(svg,[[spineEnd,spineY-10],[spineEnd+20,spineY],[spineEnd,spineY+10]],'#38bdf8');
+
+  const topMs=[M_DATA[0],M_DATA[2],M_DATA[5]], botMs=[M_DATA[1],M_DATA[3],M_DATA[4]];
+  const cols=3, segW=(spineEnd-spineStart)/cols;
+
+  topMs.forEach((m,i)=>{
+    const bX=spineStart+segW*i+segW*0.5, bY=spineY, bTipX=bX+40, bTipY=bY-110, color=colors[i];
+    line(svg,bTipX,bTipY,bX,bY,color,2.5);
+    // Category label
+    rectR(svg,bTipX-72,bTipY-26,144,32,'#131820',color,1.5,8);
+    text(svg,m.title.split(' ')[0],bTipX,bTipY-10,color,'0.74rem','bold','middle');
+    // Causes
+    (mCauses[m.key]||[]).slice(0,5).forEach((c,ci)=>{
+      const t=0.3+ci*0.12, px=bX+(bTipX-bX)*t, py=bY+(bTipY-bY)*t;
+      line(svg,px,py,px-32,py-40,color+'60',1.5);
+      text(svg,c.length>18?c.slice(0,16)+'…':c,px-38,py-46,'#94a3b8','0.62rem','500','end');
+    });
+  });
+
+  botMs.forEach((m,i)=>{
+    const bX=spineStart+segW*i+segW*0.5, bY=spineY, bTipX=bX+40, bTipY=bY+110, color=colors[3+i];
+    line(svg,bTipX,bTipY,bX,bY,color,2.5);
+    rectR(svg,bTipX-74,bTipY+2,148,32,'#131820',color,1.5,8);
+    text(svg,m.title.split(' ')[0],bTipX,bTipY+20,color,'0.74rem','bold','middle');
+    (mCauses[m.key]||[]).slice(0,5).forEach((c,ci)=>{
+      const t=0.3+ci*0.12, px=bX+(bTipX-bX)*t, py=bY+(bTipY-bY)*t;
+      line(svg,px,py,px-32,py+40,color+'60',1.5);
+      text(svg,c.length>18?c.slice(0,16)+'…':c,px-38,py+54,'#94a3b8','0.62rem','500','end');
+    });
+  });
+
+  document.getElementById('fishboneWrap').style.display='block';
+  document.getElementById('fishboneWrap').scrollIntoView({behavior:'smooth',block:'start'});
+  showToast('Diagram berhasil dibuat!','success');
+};
+
+function ns(tag){return document.createElementNS('http://www.w3.org/2000/svg',tag);}
+function setAttrs(el,attrs){Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));return el;}
+function line(svg,x1,y1,x2,y2,stroke,sw){svg.appendChild(setAttrs(ns('line'),{x1,y1,x2,y2,stroke,'stroke-width':sw,'stroke-linecap':'round'}));}
+function rect(svg,x,y,w,h,fill,rx){svg.appendChild(setAttrs(ns('rect'),{x,y,width:w,height:h,fill,rx}));}
+function rectR(svg,x,y,w,h,fill,stroke,sw,rx){svg.appendChild(setAttrs(ns('rect'),{x,y,width:w,height:h,fill,stroke,'stroke-width':sw,rx}));}
+function text(svg,txt,x,y,fill,fontSize,fontWeight,anchor){const el=ns('text');setAttrs(el,{x,y,fill,'font-size':fontSize,'font-weight':fontWeight||'normal','text-anchor':anchor||'middle','dominant-baseline':'middle','font-family':'Inter, sans-serif'});el.textContent=txt;svg.appendChild(el);}
+function polygon(svg,points,fill){const el=ns('polygon');el.setAttribute('points',points.map(p=>p.join(',')).join(' '));el.setAttribute('fill',fill);svg.appendChild(el);}
+function wrapText(svg,txt,cx,cy,fill,fontSize,maxWidth){const words=txt.split(' ');const lines=[];let line='';words.forEach(w=>{const t=line?line+' '+w:w;if(t.length*6.2>maxWidth){lines.push(line);line=w;}else line=t;});if(line)lines.push(line);const lH=15,startY=cy-((lines.length-1)*lH)/2;lines.forEach((l,i)=>text(svg,l,cx,startY+i*lH,fill,fontSize,'bold','middle'));}
+
+// ════════════════════════════════════════════════════
+// PDF EXPORT
+// ════════════════════════════════════════════════════
+
+function pdfSetup() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, H = 297, M = 16;
+  return { doc, W, H, M, cW: W - M * 2 };
+}
+
+function pdfHeader(doc, W, M, title, group, date) {
+  doc.setFillColor(7, 11, 20);
+  doc.rect(0, 0, W, 30, 'F');
+  doc.setFillColor(56, 189, 248);
+  doc.rect(0, 0, W, 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(56, 189, 248);
+  doc.text('PT. INDORAMA POLYPET INDONESIA', M, 12);
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text('HSE & QA/QC Division  |  Root Cause Analysis', M, 18);
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text(date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), W - M, 18, { align: 'right' });
+
+  doc.setFillColor(19, 24, 32);
+  doc.roundedRect(M, 34, W - M * 2, 20, 3, 3, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(241, 245, 249);
+  doc.text(title, M + 6, 45);
+  if (group) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Tim: ' + group, M + 6, 50);
+  }
+  return 58;
+}
+
+function pdfSectionTitle(doc, M, y, label, color) {
+  const [r, g, b] = color || [56, 189, 248];
+  doc.setFillColor(r, g, b);
+  doc.rect(M, y, 2, 5, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(r, g, b);
+  doc.text(label.toUpperCase(), M + 5, y + 4);
+  return y + 10;
+}
+
+function pdfCheckPage(doc, y, H, M, needed) {
+  if (y + needed > H - M) {
+    doc.addPage();
+    return M;
+  }
+  return y;
+}
+
+// ── FISHBONE PDF ──
+window.exportFishbonePDF = async function() {
+  syncAllCauses();
+  const problem = document.getElementById('problemStatement').value.trim();
+  if (!problem) { showToast('Isi pernyataan masalah terlebih dahulu!', 'error'); return; }
+
+  showToast('Membuat PDF...', 'info');
+  const group = document.getElementById('groupName').value.trim();
+  const date  = document.getElementById('analysisDate').value.trim();
+  const { doc, W, H, M, cW } = pdfSetup();
+
+  let y = pdfHeader(doc, W, M, 'Analisis Fishbone / 6M', group, date);
+
+  y = pdfSectionTitle(doc, M, y, 'Pernyataan Masalah', [56, 189, 248]);
+  doc.setFillColor(26, 34, 54);
+  doc.roundedRect(M, y, cW, 16, 2, 2, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(226, 232, 240);
+  const pLines = doc.splitTextToSize(problem, cW - 10);
+  doc.text(pLines, M + 5, y + 7);
+  y += Math.max(16, pLines.length * 5.5 + 4) + 6;
+
+  y = pdfSectionTitle(doc, M, y, 'Penyebab per Kategori 6M', [56, 189, 248]);
+
+  const mColors = [
+    [56,189,248],[251,146,60],[167,139,250],[52,211,153],[251,191,36],[244,114,182]
+  ];
+  const mLabels = ['Man (Manusia)','Machine (Mesin)','Method (Metode)','Material (Bahan)','Measurement (Pengukuran)','Mother Nature (Lingkungan)'];
+  const mKeys   = ['Man','Machine','Method','Material','Measurement','Mother Nature'];
+
+  mKeys.forEach((key, i) => {
+    const causes = mCauses[key] || [];
+    const [r,g,b] = mColors[i];
+    const rowH = Math.max(12, causes.length * 5.5 + 7);
+    y = pdfCheckPage(doc, y, H, M, rowH + 2);
+
+    doc.setFillColor(19, 24, 32);
+    doc.roundedRect(M, y, cW, rowH, 2, 2, 'F');
+    doc.setFillColor(r, g, b);
+    doc.rect(M, y, 3, rowH, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(r, g, b);
+    doc.text(mLabels[i], M + 6, y + 5.5);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    if (causes.length === 0) {
+      doc.setTextColor(100, 116, 139);
+      doc.text('(tidak diisi)', M + 6, y + 12);
+    } else {
+      causes.forEach((c, ci) => {
+        doc.setTextColor(226, 232, 240);
+        doc.text(`• ${c}`, M + 6, y + 12 + ci * 5.5);
+      });
+    }
+    y += rowH + 3;
+  });
+
+  const svgEl = document.getElementById('fishboneSVG');
+  if (svgEl && svgEl.innerHTML) {
+    y = pdfCheckPage(doc, y, H, M, 80);
+    y = pdfSectionTitle(doc, M, y, 'Fishbone Diagram', [56, 189, 248]);
+    try {
+      const canvas = await html2canvas(document.getElementById('fishboneWrap'), {
+        backgroundColor: '#0d1117', scale: 1.5, useCORS: true
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const imgH = cW * canvas.height / canvas.width;
+      y = pdfCheckPage(doc, y, H, M, imgH + 4);
+      doc.addImage(imgData, 'PNG', M, y, cW, imgH);
+      y += imgH + 6;
+    } catch(e) { /* skip diagram if fails */ }
+  }
+
+  pdfFooter(doc, W, H);
+  const fname = `Fishbone_${(group||'IPPI').replace(/\s+/g,'_')}_${Date.now()}.pdf`;
+  doc.save(fname);
+  showToast('PDF berhasil diunduh!', 'success');
+};
+
+// ── 5WHY PDF ──
+window.export5WhyPDF = async function() {
+  const tAs = document.querySelectorAll('#whyChain textarea');
+  tAs.forEach((ta, i) => { whyAnswers[i] = ta.value.trim(); });
+  const problem   = document.getElementById('whyProblem').value.trim();
+  const group     = document.getElementById('whyGroup').value.trim();
+  const rootCause = document.getElementById('rootCause').value.trim();
+  if (!problem) { showToast('Isi masalah terlebih dahulu!', 'error'); return; }
+
+  showToast('Membuat PDF...', 'info');
+  const { doc, W, H, M, cW } = pdfSetup();
+
+  let y = pdfHeader(doc, W, M, 'Analisis 5 Why', group, '');
+
+  y = pdfSectionTitle(doc, M, y, 'Masalah yang Dianalisis', [167, 139, 250]);
+  doc.setFillColor(26, 34, 54);
+  doc.roundedRect(M, y, cW, 16, 2, 2, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(226, 232, 240);
+  doc.text(doc.splitTextToSize(problem, cW - 10), M + 5, y + 7);
+  y += 20;
+
+  y = pdfSectionTitle(doc, M, y, 'Rantai 5 Why', [167, 139, 250]);
+  const whyColors = [
+    [56,189,248],[52,211,153],[251,191,36],[251,146,60],[244,114,182]
+  ];
+
+  whyAnswers.forEach((w, i) => {
+    const txt = w || '(tidak diisi)';
+    const lines = doc.splitTextToSize(txt, cW - 26);
+    const rowH = Math.max(14, lines.length * 5.5 + 7);
+    y = pdfCheckPage(doc, y, H, M, rowH + 4);
+
+    const [r,g,b] = whyColors[i];
+    if (i > 0) {
+      doc.setDrawColor(r, g, b);
+      doc.setLineWidth(0.4);
+      doc.line(M + 9, y - 4, M + 9, y);
+    }
+
+    doc.setFillColor(19, 24, 32);
+    doc.roundedRect(M, y, cW, rowH, 2, 2, 'F');
+    doc.setFillColor(r, g, b);
+    doc.roundedRect(M, y, 18, rowH, 2, 2, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(7, 11, 20);
+    doc.text(`W${i+1}`, M + 9, y + rowH / 2 + 1, { align: 'center', baseline: 'middle' });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(w ? 226 : 100, w ? 232 : 116, w ? 240 : 139);
+    doc.text(lines, M + 22, y + 7);
+    y += rowH + 4;
+  });
+
+  if (rootCause) {
+    y = pdfCheckPage(doc, y, H, M, 24);
+    y += 2;
+    y = pdfSectionTitle(doc, M, y, '🎯 Root Cause (Akar Penyebab)', [167, 139, 250]);
+    const rcLines = doc.splitTextToSize(rootCause, cW - 10);
+    const rcH = Math.max(16, rcLines.length * 5.5 + 7);
+    doc.setFillColor(30, 15, 50);
+    doc.roundedRect(M, y, cW, rcH, 2, 2, 'F');
+    doc.setDrawColor(167, 139, 250);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(M, y, cW, rcH, 2, 2, 'S');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(167, 139, 250);
+    doc.text(rcLines, M + 5, y + 7);
+    y += rcH + 4;
+  }
+
+  pdfFooter(doc, W, H);
+  const fname = `5Why_${(group||'IPPI').replace(/\s+/g,'_')}_${Date.now()}.pdf`;
+  doc.save(fname);
+  showToast('PDF berhasil diunduh!', 'success');
+};
+
+// ── EXPORT DARI RIWAYAT ──
+window.exportRecordPDF = async function(id) {
+  const h = allHistory.find(x => x.id === id);
+  if (!h) return;
+  const isFb = h.col === 'fishbone';
+  showToast('Membuat PDF...', 'info');
+
+  const { doc, W, H, M, cW } = pdfSetup();
+  const date = h.savedAt ? new Date(h.savedAt).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' }) : '';
+  let y = pdfHeader(doc, W, M, isFb ? 'Analisis Fishbone / 6M' : 'Analisis 5 Why', h.group, date);
+
+  const accentColor = isFb ? [56,189,248] : [167,139,250];
+  y = pdfSectionTitle(doc, M, y, 'Masalah', accentColor);
+  doc.setFillColor(26, 34, 54);
+  doc.roundedRect(M, y, cW, 16, 2, 2, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(226, 232, 240);
+  doc.text(doc.splitTextToSize(h.problem || '-', cW - 10), M + 5, y + 7);
+  y += 20;
+
+  if (isSpc) {
+    y = pdfSectionTitle(doc, M, y, 'Statistik SPC', accentColor);
+    const st = h.stats || {};
+    const sData = h.data || [];
+    doc.setFillColor(19, 24, 32);
+    doc.roundedRect(M, y, cW, 30, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(56, 189, 248);
+    doc.text('Parameter: ' + (h.parameter || '-'), M + 4, y + 7);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(226, 232, 240);
+    doc.text('Subgroup: ' + sData.length + ' (n=' + (h.subgroupSize || 5) + ')    X̄: ' + (st.xbarBar !== undefined ? st.xbarBar.toFixed(3) : '-') + '    R̄: ' + (st.rBar !== undefined ? st.rBar.toFixed(3) : '-'), M + 4, y + 14);
+    doc.text('Cp: ' + (st.cp !== null ? st.cp.toFixed(2) : '-') + '    Cpk: ' + (st.cpk !== null ? st.cpk.toFixed(2) : '-') + '    Sigma: ' + (st.sigma !== null ? st.sigma.toFixed(4) : '-'), M + 4, y + 21);
+    y += 36;
+
+    y = pdfSectionTitle(doc, M, y, 'Tabel Data Subgroup', accentColor);
+    const rowH = 7;
+    const headers = ['SG', 'X̄', 'R', 'Status'];
+    const colWs = [15, 30, 30, 30];
+    doc.setFillColor(19, 24, 32);
+    doc.rect(M, y, cW, 9, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(241, 245, 249);
+    let tx = M;
+    headers.forEach((hd, hi) => {
+      doc.text(hd, tx + 3, y + 6);
+      tx += colWs[hi];
+    });
+    y += 9;
+    sData.forEach((d, i) => {
+      y = pdfCheckPage(doc, y, H, M, rowH + 2);
+      const oocX = d.xbar > st.uclX || d.xbar < st.lclX;
+      const oocR = d.r > st.uclR || d.r < st.lclR;
+      const ooc = oocX || oocR;
+      doc.setFillColor(i % 2 === 0 ? 26 : 22, i % 2 === 0 ? 34 : 29, i % 2 === 0 ? 54 : 45);
+      doc.rect(M, y, cW, rowH, 'F');
+      if (ooc) {
+        doc.setFillColor(248, 113, 113);
+        doc.rect(M, y, 2, rowH, 'F');
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(226, 232, 240);
+      tx = M;
+      doc.text(d.sg.toString(), tx + 3, y + 5);
+      tx += colWs[0];
+      doc.text(d.xbar.toFixed(3), tx + 3, y + 5);
+      tx += colWs[1];
+      doc.text(d.r.toFixed(3), tx + 3, y + 5);
+      tx += colWs[2];
+      doc.setTextColor(ooc ? 248 : 52, ooc ? 113 : 211, ooc ? 113 : 153);
+      doc.text(ooc ? 'OOC' : 'OK', tx + 3, y + 5);
+      y += rowH;
+    });
+  } else if (isPareto) {
+    y = pdfSectionTitle(doc, M, y, 'Data Pareto', accentColor);
+    const pData = h.data || [];
+    const rowH = 7;
+    const headers = ['No', 'Kategori', 'Jumlah', '%', 'Kumulatif %'];
+    const colWs = [12, 70, 25, 20, 30];
+    y = pdfCheckPage(doc, y, H, M, 12);
+    doc.setFillColor(19, 24, 32);
+    doc.rect(M, y, cW, 10, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(56, 189, 248);
+    let tx = M;
+    headers.forEach((hd, hi) => {
+      doc.text(hd, tx + 3, y + 6.5);
+      tx += colWs[hi];
+    });
+    y += 10;
+    pData.forEach((d, i) => {
+      y = pdfCheckPage(doc, y, H, M, rowH + 2);
+      const isVital = d.cumPct <= 80;
+      doc.setFillColor(i % 2 === 0 ? 26 : 22, i % 2 === 0 ? 34 : 29, i % 2 === 0 ? 54 : 45);
+      doc.rect(M, y, cW, rowH, 'F');
+      if (isVital) {
+        doc.setFillColor(56, 189, 248);
+        doc.rect(M, y, 2, rowH, 'F');
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(226, 232, 240);
+      tx = M;
+      doc.text((i+1).toString(), tx + 3, y + 5);
+      tx += colWs[0];
+      doc.text(d.cat, tx + 3, y + 5);
+      tx += colWs[1];
+      doc.text(d.val.toLocaleString('id-ID'), tx + colWs[2] - 3, y + 5, { align: 'right' });
+      tx += colWs[2];
+      doc.text(d.pct.toFixed(1) + '%', tx + colWs[3] - 3, y + 5, { align: 'right' });
+      tx += colWs[3];
+      doc.text(d.cumPct.toFixed(1) + '%', tx + colWs[4] - 3, y + 5, { align: 'right' });
+      y += rowH;
+    });
+    y += 4;
+    if (h.total) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(56, 189, 248);
+      doc.text('Total Kejadian: ' + h.total.toLocaleString('id-ID') + '  |  Vital Few: ' + pData.filter(d => d.cumPct <= 80).length + ' kategori', M, y);
+      y += 8;
+    }
+  } else if (isFb) {
+    const mColors = [[56,189,248],[251,146,60],[167,139,250],[52,211,153],[251,191,36],[244,114,182]];
+    const mLabels = ['Man (Manusia)','Machine (Mesin)','Method (Metode)','Material (Bahan)','Measurement (Pengukuran)','Mother Nature (Lingkungan)'];
+    const mKeys   = ['Man','Machine','Method','Material','Measurement','Mother Nature'];
+    y = pdfSectionTitle(doc, M, y, 'Penyebab per Kategori 6M', accentColor);
+    mKeys.forEach((key, i) => {
+      const causes = (h.causes || {})[key] || [];
+      const [r,g,b] = mColors[i];
+      const rowH = Math.max(12, causes.length * 5.5 + 7);
+      y = pdfCheckPage(doc, y, H, M, rowH + 2);
+      doc.setFillColor(19, 24, 32);
+      doc.roundedRect(M, y, cW, rowH, 2, 2, 'F');
+      doc.setFillColor(r, g, b);
+      doc.rect(M, y, 3, rowH, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(r, g, b);
+      doc.text(mLabels[i], M + 6, y + 5.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      if (causes.length === 0) {
+        doc.setTextColor(100, 116, 139);
+        doc.text('(tidak diisi)', M + 6, y + 12);
+      } else {
+        causes.forEach((c, ci) => {
+          doc.setTextColor(226, 232, 240);
+          doc.text(`• ${c}`, M + 6, y + 12 + ci * 5.5);
+        });
+      }
+      y += rowH + 3;
+    });
+  } else {
+    const whyColors = [[56,189,248],[52,211,153],[251,191,36],[251,146,60],[244,114,182]];
+    y = pdfSectionTitle(doc, M, y, 'Rantai 5 Why', accentColor);
+    (h.whys || []).forEach((w, i) => {
+      const txt = w || '(tidak diisi)';
+      const lines = doc.splitTextToSize(txt, cW - 26);
+      const rowH = Math.max(14, lines.length * 5.5 + 7);
+      y = pdfCheckPage(doc, y, H, M, rowH + 4);
+      const [r,g,b] = whyColors[i];
+      doc.setFillColor(19, 24, 32);
+      doc.roundedRect(M, y, cW, rowH, 2, 2, 'F');
+      doc.setFillColor(r, g, b);
+      doc.roundedRect(M, y, 18, rowH, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(7, 11, 20);
+      doc.text(`W${i+1}`, M + 9, y + rowH / 2 + 1, { align: 'center', baseline: 'middle' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(w ? 226 : 100, w ? 232 : 116, w ? 240 : 139);
+      doc.text(lines, M + 22, y + 7);
+      y += rowH + 4;
+    });
+    if (h.rootCause) {
+      y = pdfCheckPage(doc, y, H, M, 24);
+      y = pdfSectionTitle(doc, M, y + 2, 'Root Cause (Akar Penyebab)', accentColor);
+      const rcLines = doc.splitTextToSize(h.rootCause, cW - 10);
+      const rcH = Math.max(16, rcLines.length * 5.5 + 7);
+      doc.setFillColor(30, 15, 50);
+      doc.roundedRect(M, y, cW, rcH, 2, 2, 'F');
+      doc.setDrawColor(167, 139, 250);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(M, y, cW, rcH, 2, 2, 'S');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(167, 139, 250);
+      doc.text(rcLines, M + 5, y + 7);
+    }
+  }
+
+  pdfFooter(doc, W, H);
+  const fname = `RCA_${(h.group||'IPPI').replace(/\s+/g,'_')}_${Date.now()}.pdf`;
+  doc.save(fname);
+  showToast('PDF berhasil diunduh!', 'success');
+};
+
+function pdfFooter(doc, W, H) {
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    doc.setFillColor(7, 11, 20);
+    doc.rect(0, H - 12, W, 12, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text('PT. Indorama Polypet Indonesia  |  Fishbone & 5Why Analyzer', 16, H - 4);
+    doc.text(`Halaman ${p} / ${pageCount}`, W - 16, H - 4, { align: 'right' });
+  }
+}
+
+// ════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════
+window.switchTab = function(tab, btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  btn.classList.add('active');
+};
+
+window.clearAll = function() {
+  document.getElementById('groupName').value='';
+  document.getElementById('analysisDate').value='';
+  document.getElementById('problemStatement').value='';
+  window.mCauses={Man:[],Machine:[],Method:[],Material:[],Measurement:[],'Mother Nature':[]};
+  initMGrid();
+  document.getElementById('fishboneWrap').style.display='none';
+  showToast('Form direset','success');
+};
+
+window.clearWhys = function() {
+  document.getElementById('whyGroup').value='';
+  document.getElementById('whyProblem').value='';
+  document.getElementById('rootCause').value='';
+  window.whyAnswers=['','','','',''];
+  initWhyChain();
+  showToast('Form direset','success');
+};
+
+window.showToast = function(msg, type) {
+  const toast=document.getElementById('toast');
+  toast.textContent=msg;
+  toast.className='toast show '+(type||'info');
+  setTimeout(()=>toast.classList.remove('show'),3500);
+};
+
+document.getElementById('detailModal').addEventListener('click', function(e){ if(e.target===this) closeDetailModal(); });
+
+
+// ════════════════════════════════════════════════════
+// THEME TOGGLE
+// ════════════════════════════════════════════════════
+const THEME_KEY = 'fishbone_5why_theme';
+
+window.toggleTheme = function() {
+  const body = document.body;
+  const isLight = body.classList.toggle('light-mode');
+  const icon = document.getElementById('themeIcon');
+  const label = document.getElementById('themeLabel');
+
+  if (isLight) {
+    icon.textContent = '🌙';
+    label.textContent = 'Dark';
+    localStorage.setItem(THEME_KEY, 'light');
+    showToast('☀️ Tema terang diaktifkan', 'success');
+  } else {
+    icon.textContent = '☀️';
+    label.textContent = 'Light';
+    localStorage.setItem(THEME_KEY, 'dark');
+    showToast('🌙 Tema gelap diaktifkan', 'success');
+  }
+
+  // Redraw fishbone if visible to update colors
+  const wrap = document.getElementById('fishboneWrap');
+  if (wrap && wrap.style.display !== 'none' && document.getElementById('fishboneSVG').innerHTML) {
+    drawFishbone();
+  }
+};
+
+window.loadTheme = function() {
+  const saved = localStorage.getItem(THEME_KEY);
+  const body = document.body;
+  const icon = document.getElementById('themeIcon');
+  const label = document.getElementById('themeLabel');
+
+  if (saved === 'light') {
+    body.classList.add('light-mode');
+    icon.textContent = '🌙';
+    label.textContent = 'Dark';
+  } else {
+    body.classList.remove('light-mode');
+    icon.textContent = '☀️';
+    label.textContent = 'Light';
+  }
+};
+
+// Override drawFishbone to support light mode colors
+const originalDrawFishbone = window.drawFishbone;
+window.drawFishbone = function() {
+  syncAllCauses();
+  const problem = document.getElementById('problemStatement').value.trim() || 'Masalah Utama';
+  const isLight = document.body.classList.contains('light-mode');
+  const svg = document.getElementById('fishboneSVG');
+  const W=960, H=480; 
+  svg.setAttribute('width',W); 
+  svg.setAttribute('height',H); 
+  svg.innerHTML='';
+
+  // Background
+  const bgColor = isLight ? '#ffffff' : '#0d1117';
+  const spineColor = isLight ? '#e2e8f0' : '#1e293b';
+  const spineInnerColor = isLight ? '#cbd5e1' : '#334155';
+  const textColor = isLight ? '#475569' : '#94a3b8';
+  const effectTextColor = isLight ? '#0284c7' : '#38bdf8';
+  const effectBg = isLight ? '#f8fafc' : '#131820';
+  const effectBorder = isLight ? '#0284c7' : '#38bdf8';
+  const arrowColor = isLight ? '#0284c7' : '#38bdf8';
+
+  rect(svg,0,0,W,H,bgColor,0);
+
+  const colors = isLight 
+    ? ['#0284c7','#ea580c','#7c3aed','#059669','#d97706','#db2777']
+    : ['#38bdf8','#fb923c','#a78bfa','#34d399','#fbbf24','#f472b6'];
+  const spineY=H/2, spineStart=80, spineEnd=W-180;
+
+  // Spine
+  line(svg,spineStart,spineY,spineEnd,spineY,spineColor,3);
+  line(svg,spineStart,spineY,spineEnd,spineY,spineInnerColor,1);
+
+  // Effect box
+  const effX=spineEnd+10, effW=155, effH=70, effY=spineY-effH/2;
+  rectR(svg,effX,effY,effW,effH,effectBg,effectBorder,2,12);
+  rectR(svg,effX+2,effY+2,effW-4,effH-4,'transparent',isLight?'rgba(2,132,199,0.06)':'rgba(56,189,248,0.08)',1,10);
+  wrapText(svg,problem,effX+effW/2,spineY,effectTextColor,'0.72rem',effW-20);
+
+  // Arrow head
+  polygon(svg,[[spineEnd,spineY-10],[spineEnd+20,spineY],[spineEnd,spineY+10]],arrowColor);
+
+  const topMs=[M_DATA[0],M_DATA[2],M_DATA[5]], botMs=[M_DATA[1],M_DATA[3],M_DATA[4]];
+  const cols=3, segW=(spineEnd-spineStart)/cols;
+
+  topMs.forEach((m,i)=>{
+    const bX=spineStart+segW*i+segW*0.5, bY=spineY, bTipX=bX+40, bTipY=bY-110, color=colors[i];
+    line(svg,bTipX,bTipY,bX,bY,color,2.5);
+    rectR(svg,bTipX-72,bTipY-26,144,32,effectBg,color,1.5,8);
+    text(svg,m.title.split(' ')[0],bTipX,bTipY-10,color,'0.74rem','bold','middle');
+    (mCauses[m.key]||[]).slice(0,5).forEach((c,ci)=>{
+      const t=0.3+ci*0.12, px=bX+(bTipX-bX)*t, py=bY+(bTipY-bY)*t;
+      line(svg,px,py,px-32,py-40,color+(isLight?'40':'60'),1.5);
+      text(svg,c.length>18?c.slice(0,16)+'…':c,px-38,py-46,textColor,'0.62rem','500','end');
+    });
+  });
+
+  botMs.forEach((m,i)=>{
+    const bX=spineStart+segW*i+segW*0.5, bY=spineY, bTipX=bX+40, bTipY=bY+110, color=colors[3+i];
+    line(svg,bTipX,bTipY,bX,bY,color,2.5);
+    rectR(svg,bTipX-74,bTipY+2,148,32,effectBg,color,1.5,8);
+    text(svg,m.title.split(' ')[0],bTipX,bTipY+20,color,'0.74rem','bold','middle');
+    (mCauses[m.key]||[]).slice(0,5).forEach((c,ci)=>{
+      const t=0.3+ci*0.12, px=bX+(bTipX-bX)*t, py=bY+(bTipY-bY)*t;
+      line(svg,px,py,px-32,py+40,color+(isLight?'40':'60'),1.5);
+      text(svg,c.length>18?c.slice(0,16)+'…':c,px-38,py+54,textColor,'0.62rem','500','end');
+    });
+  });
+
+  document.getElementById('fishboneWrap').style.display='block';
+  document.getElementById('fishboneWrap').scrollIntoView({behavior:'smooth',block:'start'});
+  showToast('Diagram berhasil dibuat!','success');
+};
+
+// Override PDF functions for light mode
+const originalExportFishbonePDF = window.exportFishbonePDF;
+window.exportFishbonePDF = async function() {
+  const isLight = document.body.classList.contains('light-mode');
+  if (isLight) {
+    // Temporarily switch to dark for PDF export (better contrast)
+    document.body.classList.remove('light-mode');
+    await originalExportFishbonePDF();
+    document.body.classList.add('light-mode');
+  } else {
+    await originalExportFishbonePDF();
+  }
+};
+
+const originalExport5WhyPDF = window.export5WhyPDF;
+window.export5WhyPDF = async function() {
+  const isLight = document.body.classList.contains('light-mode');
+  if (isLight) {
+    document.body.classList.remove('light-mode');
+    await originalExport5WhyPDF();
+    document.body.classList.add('light-mode');
+  } else {
+    await originalExport5WhyPDF();
+  }
+};
+
+const originalExportRecordPDF = window.exportRecordPDF;
+window.exportRecordPDF = async function(id) {
+  const isLight = document.body.classList.contains('light-mode');
+  if (isLight) {
+    document.body.classList.remove('light-mode');
+    await originalExportRecordPDF(id);
+    document.body.classList.add('light-mode');
+  } else {
+    await originalExportRecordPDF(id);
+  }
+};
+
+
+
+// ════════════════════════════════════════════════════
+// TRANSPARENT PNG EXPORT — Diagram Only
+// ════════════════════════════════════════════════════
+window.downloadFishboneTransparent = async function() {
+  const svgEl = document.getElementById('fishboneSVG');
+  if (!svgEl || !svgEl.innerHTML.trim()) {
+    showToast('Buat diagram terlebih dahulu!', 'error');
+    return;
+  }
+
+  showToast('Membuat PNG transparan...', 'info');
+
+  try {
+    // Clone SVG to avoid modifying the visible one
+    const clone = svgEl.cloneNode(true);
+    const W = 960, H = 480;
+    clone.setAttribute('width', W);
+    clone.setAttribute('height', H);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+    // Remove background rectangle (first rect that covers full area)
+    const rects = clone.querySelectorAll('rect');
+    rects.forEach(function(r) {
+      const rw = parseFloat(r.getAttribute('width') || 0);
+      const rh = parseFloat(r.getAttribute('height') || 0);
+      if (rw >= W - 1 && rh >= H - 1) {
+        r.remove();
+      }
+    });
+
+    // Serialize SVG
+    const serializer = new XMLSerializer();
+    let svgStr = serializer.serializeToString(clone);
+
+    // Ensure xmlns is present
+    if (!svgStr.includes('xmlns=')) {
+      svgStr = svgStr.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+
+    // Create blob and object URL
+    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    // Load into image then draw to canvas
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = W * 2;
+      canvas.height = H * 2;
+      const ctx = canvas.getContext('2d');
+
+      // Clear canvas (transparent background)
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw SVG scaled up
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+
+      // Export as PNG with transparency
+      const pngUrl = canvas.toDataURL('image/png');
+
+      // Trigger download
+      const link = document.createElement('a');
+      const group = document.getElementById('groupName').value.trim() || 'IPPI';
+      const problemRaw = document.getElementById('problemStatement').value.trim();
+      const problem = (problemRaw.substring(0, 30).replace(/[^a-zA-Z0-9]/g, '_') || 'Fishbone');
+      link.download = 'Fishbone_Transparan_' + group.replace(/\s+/g, '_') + '_' + problem + '_' + Date.now() + '.png';
+      link.href = pngUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast('PNG transparan berhasil diunduh!', 'success');
+    };
+
+    img.onerror = function() {
+      URL.revokeObjectURL(url);
+      showToast('Gagal membuat PNG.', 'error');
+    };
+
+    img.src = url;
+
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal membuat PNG: ' + err.message, 'error');
+  }
+};
+
+
+// ════════════════════════════════════════════════════
+// PARETO CHART LOGIC
+// ════════════════════════════════════════════════════
+window.paretoData = [];
+
+window.initParetoRows = function() {
+  const container = document.getElementById('paretoRows');
+  container.innerHTML = '';
+  for (let i = 0; i < 5; i++) addParetoRow();
+};
+
+window.addParetoRow = function() {
+  const container = document.getElementById('paretoRows');
+  const row = document.createElement('div');
+  row.className = 'pareto-row';
+  row.innerHTML = `
+    <input type="text" placeholder="Kategori masalah..." class="pareto-cat">
+    <input type="number" placeholder="Jumlah" class="pareto-val" min="0">
+    <button class="btn-remove" onclick="removeParetoRow(this)">✕</button>
+  `;
+  container.appendChild(row);
+  row.querySelector('.pareto-cat').focus();
+};
+
+window.removeParetoRow = function(btn) {
+  const rows = document.querySelectorAll('.pareto-row');
+  if (rows.length > 1) btn.closest('.pareto-row').remove();
+  else showToast('Minimal 1 baris data', 'error');
+};
+
+window.getParetoData = function() {
+  const rows = document.querySelectorAll('.pareto-row');
+  const data = [];
+  rows.forEach(row => {
+    const cat = row.querySelector('.pareto-cat').value.trim();
+    const val = parseFloat(row.querySelector('.pareto-val').value) || 0;
+    if (cat && val > 0) data.push({ cat, val });
+  });
+  // Sort descending
+  data.sort((a, b) => b.val - a.val);
+  // Calculate cumulative %
+  const total = data.reduce((s, d) => s + d.val, 0);
+  let cum = 0;
+  data.forEach(d => {
+    cum += d.val;
+    d.pct = (d.val / total * 100);
+    d.cumPct = (cum / total * 100);
+  });
+  return { data, total };
+};
+
+window.drawPareto = function() {
+  const { data, total } = getParetoData();
+  if (data.length === 0) { showToast('Masukkan minimal 1 data dengan kategori & jumlah!', 'error'); return; }
+
+  const canvas = document.getElementById('paretoCanvas');
+  const ctx = canvas.getContext('2d');
+  const isLight = document.body.classList.contains('light-mode');
+
+  // Colors
+  const bgColor = isLight ? '#ffffff' : '#161d27';
+  const textColor = isLight ? '#475569' : '#94a3b8';
+  const titleColor = isLight ? '#0f172a' : '#f1f5f9';
+  const gridColor = isLight ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.08)';
+  const barColors = isLight
+    ? ['#0284c7','#ea580c','#7c3aed','#059669','#d97706','#db2777','#0891b2','#65a30d','#9333ea','#e11d48']
+    : ['#38bdf8','#fb923c','#a78bfa','#34d399','#fbbf24','#f472b6','#22d3ee','#a3e635','#c084fc','#fb7185'];
+  const lineColor = isLight ? '#7c3aed' : '#a78bfa';
+  const line80Color = isLight ? '#dc2626' : '#f87171';
+
+  // Canvas setup
+  const W = 960, H = 520;
+  canvas.width = W * 2; canvas.height = H * 2;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  ctx.scale(2, 2);
+
+  // Clear
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, W, H);
+
+  // Margins
+  const M = { t: 60, r: 60, b: 100, l: 70 };
+  const chartW = W - M.l - M.r;
+  const chartH = H - M.t - M.b;
+
+  // Title
+  ctx.fillStyle = titleColor;
+  ctx.font = 'bold 18px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  const titleText = document.getElementById('paretoTitle').value.trim() || 'Pareto Chart';
+  ctx.fillText(titleText, W / 2, 32);
+  ctx.font = '12px Inter, sans-serif';
+  ctx.fillStyle = textColor;
+  const period = document.getElementById('paretoPeriod').value.trim();
+  if (period) ctx.fillText('Periode: ' + period, W / 2, 50);
+
+  // Grid lines (Y-axis left: frequency)
+  const maxVal = Math.max(...data.map(d => d.val));
+  const yStep = Math.ceil(maxVal / 5);
+  const yMax = yStep * 5;
+
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  ctx.font = '11px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = textColor;
+
+  for (let i = 0; i <= 5; i++) {
+    const y = M.t + chartH - (i / 5) * chartH;
+    ctx.beginPath();
+    ctx.moveTo(M.l, y);
+    ctx.lineTo(M.l + chartW, y);
+    ctx.stroke();
+    ctx.fillText((yStep * i).toLocaleString('id-ID'), M.l - 10, y + 4);
+  }
+
+  // Grid lines (Y-axis right: cumulative %)
+  ctx.textAlign = 'left';
+  for (let i = 0; i <= 5; i++) {
+    const y = M.t + chartH - (i / 5) * chartH;
+    ctx.fillText((i * 20) + '%', M.l + chartW + 10, y + 4);
+  }
+
+  // 80% line
+  const y80 = M.t + chartH - (0.8) * chartH;
+  ctx.strokeStyle = line80Color;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.moveTo(M.l, y80);
+  ctx.lineTo(M.l + chartW, y80);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = line80Color;
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.fillText('80%', M.l + chartW + 10, y80 + 4);
+
+  // Bars
+  const barW = (chartW / data.length) * 0.65;
+  const gap = (chartW / data.length) * 0.35;
+
+  data.forEach((d, i) => {
+    const x = M.l + (i * (chartW / data.length)) + gap / 2;
+    const barH = (d.val / yMax) * chartH;
+    const y = M.t + chartH - barH;
+
+    // Bar
+    ctx.fillStyle = barColors[i % barColors.length];
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, barH, [4, 4, 0, 0]);
+    ctx.fill();
+
+    // Value on top
+    ctx.fillStyle = titleColor;
+    ctx.font = 'bold 12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(d.val.toLocaleString('id-ID'), x + barW / 2, y - 8);
+
+    // Category label (rotated if long)
+    ctx.save();
+    ctx.translate(x + barW / 2, M.t + chartH + 15);
+    ctx.rotate(-Math.PI / 4);
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillStyle = textColor;
+    ctx.textAlign = 'right';
+    const label = d.cat.length > 18 ? d.cat.slice(0, 16) + '…' : d.cat;
+    ctx.fillText(label, 0, 0);
+    ctx.restore();
+  });
+
+  // Cumulative line
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  data.forEach((d, i) => {
+    const x = M.l + (i * (chartW / data.length)) + gap / 2 + barW / 2;
+    const y = M.t + chartH - (d.cumPct / 100) * chartH;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Cumulative points & labels
+  data.forEach((d, i) => {
+    const x = M.l + (i * (chartW / data.length)) + gap / 2 + barW / 2;
+    const y = M.t + chartH - (d.cumPct / 100) * chartH;
+
+    // Point
+    ctx.fillStyle = bgColor;
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle = lineColor;
+    ctx.font = 'bold 11px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(d.cumPct.toFixed(1) + '%', x, y - 12);
+  });
+
+  // Axis labels
+  ctx.fillStyle = textColor;
+  ctx.font = 'bold 12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Kategori Masalah', W / 2, H - 12);
+
+  ctx.save();
+  ctx.translate(18, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Frekuensi / Jumlah', 0, 0);
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(W - 18, H / 2);
+  ctx.rotate(Math.PI / 2);
+  ctx.fillText('Kumulatif %', 0, 0);
+  ctx.restore();
+
+  // Show wrap
+  document.getElementById('paretoWrap').style.display = 'block';
+  document.getElementById('paretoWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Summary cards
+  const summaryDiv = document.getElementById('paretoSummary');
+  const vitalFew = data.filter(d => d.cumPct <= 80).length;
+  summaryDiv.innerHTML = `
+    <div class="pareto-summary-card">
+      <div class="ps-value">${data.length}</div>
+      <div class="ps-label">Total Kategori</div>
+    </div>
+    <div class="pareto-summary-card">
+      <div class="ps-value">${total.toLocaleString('id-ID')}</div>
+      <div class="ps-label">Total Kejadian</div>
+    </div>
+    <div class="pareto-summary-card">
+      <div class="ps-value">${vitalFew}</div>
+      <div class="ps-label">Vital Few (≤80%)</div>
+    </div>
+    <div class="pareto-summary-card">
+      <div class="ps-value">${(vitalFew / data.length * 100).toFixed(0)}%</div>
+      <div class="ps-label">% Kategori Prioritas</div>
+    </div>
+  `;
+
+  showToast('Pareto Chart berhasil dibuat!', 'success');
+};
+
+window.savePareto = function() {
+  const { data, total } = getParetoData();
+  if (data.length === 0) { showToast('Masukkan data terlebih dahulu!', 'error'); return; }
+
+  const record = {
+    id: Date.now().toString(),
+    col: 'pareto',
+    type: 'pareto',
+    group: document.getElementById('paretoGroup').value.trim() || '-',
+    period: document.getElementById('paretoPeriod').value.trim(),
+    title: document.getElementById('paretoTitle').value.trim() || 'Pareto Chart',
+    data: data,
+    total: total,
+    savedAt: Date.now()
+  };
+
+  const history = loadFromStorage();
+  history.unshift(record);
+  saveToStorage(history);
+  showToast('Data Pareto berhasil disimpan!', 'success');
+};
+
+window.clearPareto = function() {
+  document.getElementById('paretoGroup').value = '';
+  document.getElementById('paretoPeriod').value = '';
+  document.getElementById('paretoTitle').value = '';
+  initParetoRows();
+  document.getElementById('paretoWrap').style.display = 'none';
+  showToast('Form Pareto direset', 'success');
+};
+
+window.downloadParetoTransparent = function() {
+  const canvas = document.getElementById('paretoCanvas');
+  if (!canvas || document.getElementById('paretoWrap').style.display === 'none') {
+    showToast('Buat chart terlebih dahulu!', 'error'); return;
+  }
+  showToast('Membuat PNG transparan...', 'info');
+
+  try {
+    // Create transparent version by redrawing without background fill
+    const isLight = document.body.classList.contains('light-mode');
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tCtx = tempCanvas.getContext('2d');
+
+    // Clear (transparent)
+    tCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+    // Redraw chart logic without background rect
+    // We reuse the same draw function but modify canvas temporarily
+    const origCanvas = canvas;
+    const origCtx = origCanvas.getContext('2d');
+
+    // Get image data from original, but we need to make bg transparent
+    // Simple approach: redraw on temp canvas with modified colors
+    const W = 960, H = 520;
+    tCtx.scale(2, 2);
+
+    // We need to re-run draw logic on temp canvas... 
+    // Simpler: just export original but set white pixels to transparent
+    const imgData = origCtx.getImageData(0, 0, origCanvas.width, origCanvas.height);
+    const d = imgData.data;
+    const bgR = isLight ? 255 : 22;
+    const bgG = isLight ? 255 : 29;
+    const bgB = isLight ? 255 : 39;
+    const threshold = 30;
+
+    for (let i = 0; i < d.length; i += 4) {
+      const diff = Math.abs(d[i] - bgR) + Math.abs(d[i+1] - bgG) + Math.abs(d[i+2] - bgB);
+      if (diff < threshold * 3) {
+        d[i+3] = 0; // Make transparent
+      }
+    }
+    tCtx.putImageData(imgData, 0, 0);
+
+    const pngUrl = tempCanvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    const group = document.getElementById('paretoGroup').value.trim() || 'IPPI';
+    const title = (document.getElementById('paretoTitle').value.trim() || 'Pareto').replace(/\s+/g, '_');
+    link.download = 'Pareto_Transparan_' + group.replace(/\s+/g, '_') + '_' + title + '_' + Date.now() + '.png';
+    link.href = pngUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('PNG transparan berhasil diunduh!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal membuat PNG: ' + err.message, 'error');
+  }
+};
+
+window.exportParetoPDF = async function() {
+  const { data, total } = getParetoData();
+  if (data.length === 0) { showToast('Masukkan data terlebih dahulu!', 'error'); return; }
+
+  showToast('Membuat PDF...', 'info');
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const W = 297, H = 210, M = 16;
+
+  // Header
+  doc.setFillColor(7, 11, 20);
+  doc.rect(0, 0, W, 22, 'F');
+  doc.setFillColor(56, 189, 248);
+  doc.rect(0, 0, W, 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(56, 189, 248);
+  doc.text('PT. INDORAMA POLYPET INDONESIA', M, 10);
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('HSE & QA/QC Division  |  Pareto Analysis', M, 15);
+
+  const title = document.getElementById('paretoTitle').value.trim() || 'Pareto Chart';
+  const group = document.getElementById('paretoGroup').value.trim();
+  const period = document.getElementById('paretoPeriod').value.trim();
+
+  doc.setFillColor(19, 24, 32);
+  doc.roundedRect(M, 26, W - M * 2, 18, 2, 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(241, 245, 249);
+  doc.text(title, M + 4, 35);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  if (group) doc.text('Tim: ' + group, M + 4, 40);
+  if (period) doc.text('Periode: ' + period, M + 80, 40);
+
+  // Chart image
+  try {
+    const canvas = document.getElementById('paretoCanvas');
+    const imgData = canvas.toDataURL('image/png');
+    const imgW = W - M * 2;
+    const imgH = imgW * (520 / 960);
+    doc.addImage(imgData, 'PNG', M, 50, imgW, imgH);
+  } catch (e) { /* skip if fails */ }
+
+  // Data table on new page
+  doc.addPage();
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(56, 189, 248);
+  doc.text('Tabel Data Pareto', M, 20);
+
+  let y = 30;
+  const rowH = 8;
+  const colW = [10, 80, 30, 30, 30, 30];
+  const headers = ['No', 'Kategori', 'Jumlah', '%', 'Kumulatif %', 'Status'];
+
+  // Header row
+  doc.setFillColor(19, 24, 32);
+  doc.rect(M, y, W - M * 2, rowH, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(241, 245, 249);
+  let x = M;
+  headers.forEach((h, i) => {
+    doc.text(h, x + 3, y + 5.5);
+    x += colW[i];
+  });
+  y += rowH;
+
+  // Data rows
+  doc.setFont('helvetica', 'normal');
+  data.forEach((d, i) => {
+    if (y > H - M - 10) { doc.addPage(); y = M + 5; }
+    const isVital = d.cumPct <= 80;
+    doc.setFillColor(i % 2 === 0 ? 26 : 22, i % 2 === 0 ? 34 : 29, i % 2 === 0 ? 54 : 45);
+    doc.rect(M, y, W - M * 2, rowH, 'F');
+    if (isVital) {
+      doc.setDrawColor(56, 189, 248);
+      doc.setLineWidth(0.3);
+      doc.rect(M, y, 2, rowH, 'F');
+    }
+    doc.setTextColor(226, 232, 240);
+    x = M;
+    const texts = [
+      (i + 1).toString(),
+      d.cat,
+      d.val.toLocaleString('id-ID'),
+      d.pct.toFixed(1) + '%',
+      d.cumPct.toFixed(1) + '%',
+      isVital ? 'Vital Few' : 'Trivial Many'
+    ];
+    texts.forEach((t, ci) => {
+      doc.setTextColor(ci === 5 && isVital ? 56 : 226, ci === 5 && isVital ? 189 : 232, ci === 5 && isVital ? 248 : 240);
+      doc.text(t, x + 3, y + 5.5);
+      x += colW[ci];
+    });
+    y += rowH;
+  });
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    doc.setFillColor(7, 11, 20);
+    doc.rect(0, H - 10, W, 10, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text('PT. Indorama Polypet Indonesia  |  Fishbone & 5Why & Pareto Analyzer', M, H - 3);
+    doc.text('Halaman ' + p + ' / ' + pageCount, W - M, H - 3, { align: 'right' });
+  }
+
+  const fname = 'Pareto_' + (group || 'IPPI').replace(/\s+/g, '_') + '_' + Date.now() + '.pdf';
+  doc.save(fname);
+  showToast('PDF berhasil diunduh!', 'success');
+};
+
+
+
+// ════════════════════════════════════════════════════
+// SPC / CONTROL CHART LOGIC
+// ════════════════════════════════════════════════════
+window.spcData = [];
+
+// Control chart constants (A2, D3, D4) for X-bar R chart
+const SPC_CONST = {
+  2:  { A2: 1.880, D3: 0,     D4: 3.267 },
+  3:  { A2: 1.023, D3: 0,     D4: 2.574 },
+  4:  { A2: 0.729, D3: 0,     D4: 2.282 },
+  5:  { A2: 0.577, D3: 0,     D4: 2.114 },
+  6:  { A2: 0.483, D3: 0,     D4: 2.004 },
+  7:  { A2: 0.419, D3: 0.076, D4: 1.924 },
+};
+
+window.initSpcRows = function() {
+  const container = document.getElementById('spcRows');
+  const n = parseInt(document.getElementById('spcSubgroupSize').value) || 5;
+  container.innerHTML = '';
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'spc-header-row';
+  let hHTML = '<span>SG</span>';
+  for (let i = 1; i <= 5; i++) {
+    hHTML += `<span style="${i > n ? 'opacity:0.3;' : ''}">X${i}</span>`;
+  }
+  hHTML += '<span>X̄</span><span>R</span><span></span>';
+  header.innerHTML = hHTML;
+  container.appendChild(header);
+
+  // Default 10 subgroups
+  for (let i = 0; i < 10; i++) addSpcRow();
+};
+
+window.addSpcRow = function() {
+  const container = document.getElementById('spcRows');
+  const n = parseInt(document.getElementById('spcSubgroupSize').value) || 5;
+  const sgNo = container.querySelectorAll('.spc-row').length + 1;
+
+  const row = document.createElement('div');
+  row.className = 'spc-row';
+  let html = `<div class="sg-label">${sgNo}</div>`;
+  for (let i = 1; i <= 5; i++) {
+    const disabled = i > n ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : '';
+    html += `<input type="number" class="spc-x${i}" step="any" placeholder="X${i}" ${disabled} onchange="calcSpcRow(this)">`;
+  }
+  html += `<div class="stat-readonly spc-xbar" id="xbar-${sgNo}">-</div>`;
+  html += `<div class="stat-readonly spc-r" id="r-${sgNo}">-</div>`;
+  html += `<button class="btn-remove" onclick="removeSpcRow(this)">✕</button>`;
+  row.innerHTML = html;
+  container.appendChild(row);
+};
+
+window.removeSpcRow = function(btn) {
+  const rows = document.querySelectorAll('.spc-row');
+  if (rows.length > 2) {
+    btn.closest('.spc-row').remove();
+    // Renumber
+    document.querySelectorAll('.spc-row').forEach((r, i) => {
+      r.querySelector('.sg-label').textContent = i + 1;
+    });
+  } else {
+    showToast('Minimal 2 subgroup', 'error');
+  }
+};
+
+window.calcSpcRow = function(input) {
+  const row = input.closest('.spc-row');
+  const n = parseInt(document.getElementById('spcSubgroupSize').value) || 5;
+  const vals = [];
+  for (let i = 1; i <= n; i++) {
+    const v = parseFloat(row.querySelector('.spc-x' + i).value);
+    if (!isNaN(v)) vals.push(v);
+  }
+  if (vals.length === n) {
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const range = Math.max(...vals) - Math.min(...vals);
+    row.querySelector('.spc-xbar').textContent = mean.toFixed(3);
+    row.querySelector('.spc-r').textContent = range.toFixed(3);
+  }
+};
+
+window.getSpcData = function() {
+  const rows = document.querySelectorAll('.spc-row');
+  const n = parseInt(document.getElementById('spcSubgroupSize').value) || 5;
+  const data = [];
+  rows.forEach((row, idx) => {
+    const vals = [];
+    for (let i = 1; i <= n; i++) {
+      const v = parseFloat(row.querySelector('.spc-x' + i).value);
+      if (!isNaN(v)) vals.push(v);
+    }
+    if (vals.length === n) {
+      const xbar = vals.reduce((a, b) => a + b, 0) / n;
+      const r = Math.max(...vals) - Math.min(...vals);
+      data.push({ sg: idx + 1, vals, xbar, r });
+    }
+  });
+  return { data, n };
+};
+
+window.drawSpc = function() {
+  const { data, n } = getSpcData();
+  if (data.length < 2) { showToast('Masukkan minimal 2 subgroup lengkap!', 'error'); return; }
+
+  const consts = SPC_CONST[n] || SPC_CONST[5];
+  const xbars = data.map(d => d.xbar);
+  const rs = data.map(d => d.r);
+
+  const xbarBar = xbars.reduce((a, b) => a + b, 0) / xbars.length;
+  const rBar = rs.reduce((a, b) => a + b, 0) / rs.length;
+
+  const uclX = xbarBar + consts.A2 * rBar;
+  const lclX = xbarBar - consts.A2 * rBar;
+  const uclR = consts.D4 * rBar;
+  const lclR = consts.D3 * rBar;
+
+  // Capability (if spec limits provided)
+  const usl = parseFloat(document.getElementById('spcUSL').value);
+  const lsl = parseFloat(document.getElementById('spcLSL').value);
+  let cp = null, cpk = null, sigma = null;
+  if (!isNaN(usl) && !isNaN(lsl)) {
+    sigma = rBar / consts.D2 || rBar / 2.326; // Approximate sigma from R-bar
+    cp = (usl - lsl) / (6 * sigma);
+    cpk = Math.min((usl - xbarBar) / (3 * sigma), (xbarBar - lsl) / (3 * sigma));
+  }
+
+  // Stats display
+  const statsDiv = document.getElementById('spcStats');
+  const isLight = document.body.classList.contains('light-mode');
+  const okColor = isLight ? '#059669' : '#34d399';
+  const alertColor = isLight ? '#dc2626' : '#f87171';
+
+  const cpkClass = cpk !== null ? (cpk >= 1.33 ? 'ok' : cpk >= 1.0 ? '' : 'alert') : '';
+  const cpkText = cpk !== null ? (cpk >= 1.33 ? '✓ Baik' : cpk >= 1.0 ? '⚠ Cukup' : '✗ Buruk') : '-';
+
+  statsDiv.innerHTML = `
+    <div class="spc-stat-card">
+      <div class="ss-value">${xbarBar.toFixed(3)}</div>
+      <div class="ss-label">X̄ (Grand Mean)</div>
+    </div>
+    <div class="spc-stat-card">
+      <div class="ss-value">${rBar.toFixed(3)}</div>
+      <div class="ss-label">R̄ (Mean Range)</div>
+    </div>
+    <div class="spc-stat-card">
+      <div class="ss-value">${data.length}</div>
+      <div class="ss-label">Jumlah Subgroup</div>
+    </div>
+    <div class="spc-stat-card">
+      <div class="ss-value ${cpkClass}">${cp !== null ? cp.toFixed(2) : '-'}</div>
+      <div class="ss-label">Cp (Capability)</div>
+    </div>
+    <div class="spc-stat-card">
+      <div class="ss-value ${cpkClass}">${cpk !== null ? cpk.toFixed(2) : '-'}</div>
+      <div class="ss-label">Cpk ${cpkText}</div>
+    </div>
+    <div class="spc-stat-card">
+      <div class="ss-value">${sigma !== null ? sigma.toFixed(4) : '-'}</div>
+      <div class="ss-label">Sigma (est)</div>
+    </div>
+  `;
+
+  // Draw X-bar chart
+  drawSpcChart({
+    canvasId: 'spcXbarCanvas',
+    data: xbars,
+    ucl: uclX,
+    lcl: lclX,
+    cl: xbarBar,
+    usl: isNaN(usl) ? null : usl,
+    lsl: isNaN(lsl) ? null : lsl,
+    target: isNaN(parseFloat(document.getElementById('spcTarget').value)) ? null : parseFloat(document.getElementById('spcTarget').value),
+    title: 'X-bar Chart',
+    yLabel: 'X̄ (Rata-rata Subgroup)',
+    pointColor: '#38bdf8',
+    lineColor: '#a78bfa'
+  });
+
+  // Draw R chart
+  drawSpcChart({
+    canvasId: 'spcRCanvas',
+    data: rs,
+    ucl: uclR,
+    lcl: lclR,
+    cl: rBar,
+    usl: null,
+    lsl: null,
+    target: null,
+    title: 'R Chart',
+    yLabel: 'R (Range)',
+    pointColor: '#fb923c',
+    lineColor: '#f472b6',
+    isRchart: true
+  });
+
+  document.getElementById('spcWrap').style.display = 'block';
+  document.getElementById('spcWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  showToast('Control Chart berhasil dibuat!', 'success');
+};
+
+window.drawSpcChart = function(cfg) {
+  const canvas = document.getElementById(cfg.canvasId);
+  const ctx = canvas.getContext('2d');
+  const isLight = document.body.classList.contains('light-mode');
+
+  const W = 960, H = cfg.isRchart ? 320 : 400;
+  canvas.width = W * 2;
+  canvas.height = H * 2;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(2, 2);
+
+  const bgColor = isLight ? '#ffffff' : '#161d27';
+  const textColor = isLight ? '#475569' : '#94a3b8';
+  const titleColor = isLight ? '#0f172a' : '#f1f5f9';
+  const gridColor = isLight ? 'rgba(148,163,184,0.25)' : 'rgba(148,163,184,0.08)';
+  const clColor = isLight ? '#7c3aed' : '#a78bfa';
+  const limitColor = isLight ? '#dc2626' : '#f87171';
+  const specColor = isLight ? '#059669' : '#34d399';
+  const targetColor = isLight ? '#d97706' : '#fbbf24';
+
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, W, H);
+
+  const M = { t: 50, r: 50, b: 70, l: 70 };
+  const chartW = W - M.l - M.r;
+  const chartH = H - M.t - M.b;
+
+  // Title
+  ctx.fillStyle = titleColor;
+  ctx.font = 'bold 16px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  const param = document.getElementById('spcParameter').value.trim();
+  ctx.fillText((param ? param + ' — ' : '') + cfg.title, W / 2, 28);
+
+  // Determine Y range
+  const allY = [...cfg.data, cfg.ucl, cfg.lcl, cfg.cl];
+  if (cfg.usl !== null) allY.push(cfg.usl);
+  if (cfg.lsl !== null) allY.push(cfg.lsl);
+  if (cfg.target !== null) allY.push(cfg.target);
+  const yMin = Math.min(...allY);
+  const yMax = Math.max(...allY);
+  const yPad = (yMax - yMin) * 0.15;
+  const yLo = yMin - yPad;
+  const yHi = yMax + yPad;
+
+  const yScale = chartH / (yHi - yLo);
+  const yPos = v => M.t + chartH - (v - yLo) * yScale;
+
+  // Grid & Y labels
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillStyle = textColor;
+
+  const yStep = (yHi - yLo) / 6;
+  for (let i = 0; i <= 6; i++) {
+    const yv = yLo + i * yStep;
+    const py = yPos(yv);
+    ctx.beginPath();
+    ctx.moveTo(M.l, py);
+    ctx.lineTo(M.l + chartW, py);
+    ctx.stroke();
+    ctx.fillText(yv.toFixed(cfg.isRchart ? 2 : 3), M.l - 8, py + 3);
+  }
+
+  // Horizontal lines: UCL, CL, LCL
+  [cfg.ucl, cfg.cl, cfg.lcl].forEach((v, i) => {
+    const py = yPos(v);
+    ctx.strokeStyle = limitColor;
+    ctx.lineWidth = i === 1 ? 1.5 : 1;
+    ctx.setLineDash(i === 1 ? [] : [5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(M.l, py);
+    ctx.lineTo(M.l + chartW, py);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = limitColor;
+    ctx.font = 'bold 9px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    const labels = ['UCL', 'CL', 'LCL'];
+    ctx.fillText(labels[i] + ' ' + v.toFixed(cfg.isRchart ? 2 : 3), M.l + chartW + 6, py + 3);
+  });
+
+  // Spec lines
+  if (cfg.usl !== null) {
+    const py = yPos(cfg.usl);
+    ctx.strokeStyle = specColor;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(M.l, py);
+    ctx.lineTo(M.l + chartW, py);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = specColor;
+    ctx.fillText('USL ' + cfg.usl.toFixed(3), M.l + chartW + 6, py + 3);
+  }
+  if (cfg.lsl !== null) {
+    const py = yPos(cfg.lsl);
+    ctx.strokeStyle = specColor;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(M.l, py);
+    ctx.lineTo(M.l + chartW, py);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = specColor;
+    ctx.fillText('LSL ' + cfg.lsl.toFixed(3), M.l + chartW + 6, py + 3);
+  }
+  if (cfg.target !== null) {
+    const py = yPos(cfg.target);
+    ctx.strokeStyle = targetColor;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.moveTo(M.l, py);
+    ctx.lineTo(M.l + chartW, py);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = targetColor;
+    ctx.fillText('Target ' + cfg.target.toFixed(3), M.l + chartW + 6, py + 3);
+  }
+
+  // Data points & line
+  const xStep = chartW / (cfg.data.length + 1);
+  ctx.strokeStyle = cfg.lineColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  cfg.data.forEach((v, i) => {
+    const px = M.l + xStep * (i + 1);
+    const py = yPos(v);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+  ctx.stroke();
+
+  // Points
+  cfg.data.forEach((v, i) => {
+    const px = M.l + xStep * (i + 1);
+    const py = yPos(v);
+    const outOfControl = v > cfg.ucl || v < cfg.lcl;
+
+    ctx.fillStyle = bgColor;
+    ctx.beginPath();
+    ctx.arc(px, py, outOfControl ? 7 : 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = outOfControl ? limitColor : cfg.pointColor;
+    ctx.lineWidth = outOfControl ? 3 : 2;
+    ctx.stroke();
+
+    if (outOfControl) {
+      ctx.fillStyle = limitColor;
+      ctx.font = 'bold 10px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚠', px, py - 12);
+    }
+
+    // X label
+    ctx.fillStyle = textColor;
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText((i + 1).toString(), px, M.t + chartH + 18);
+  });
+
+  // Axis labels
+  ctx.fillStyle = textColor;
+  ctx.font = 'bold 11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Subgroup Number', W / 2, H - 10);
+
+  ctx.save();
+  ctx.translate(16, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(cfg.yLabel, 0, 0);
+  ctx.restore();
+
+  // Legend
+  ctx.font = '10px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  let lx = M.l, ly = H - 28;
+  const legendItems = [
+    { color: cfg.pointColor, text: 'Data' },
+    { color: clColor, text: 'CL' },
+    { color: limitColor, text: 'UCL/LCL' }
+  ];
+  if (cfg.usl !== null) legendItems.push({ color: specColor, text: 'Spec Limit' });
+  legendItems.forEach(item => {
+    ctx.fillStyle = item.color;
+    ctx.fillRect(lx, ly, 10, 3);
+    ctx.fillStyle = textColor;
+    ctx.fillText(item.text, lx + 14, ly + 3);
+    lx += ctx.measureText(item.text).width + 34;
+  });
+};
+
+window.saveSpc = function() {
+  const { data, n } = getSpcData();
+  if (data.length < 2) { showToast('Masukkan minimal 2 subgroup!', 'error'); return; }
+
+  const consts = SPC_CONST[n] || SPC_CONST[5];
+  const xbars = data.map(d => d.xbar);
+  const rs = data.map(d => d.r);
+  const xbarBar = xbars.reduce((a, b) => a + b, 0) / xbars.length;
+  const rBar = rs.reduce((a, b) => a + b, 0) / rs.length;
+
+  const usl = parseFloat(document.getElementById('spcUSL').value);
+  const lsl = parseFloat(document.getElementById('spcLSL').value);
+  let cp = null, cpk = null, sigma = null;
+  if (!isNaN(usl) && !isNaN(lsl)) {
+    sigma = rBar / (consts.D2 || 2.326);
+    cp = (usl - lsl) / (6 * sigma);
+    cpk = Math.min((usl - xbarBar) / (3 * sigma), (xbarBar - lsl) / (3 * sigma));
+  }
+
+  const record = {
+    id: Date.now().toString(),
+    col: 'spc',
+    type: 'spc',
+    group: document.getElementById('spcGroup').value.trim() || '-',
+    period: document.getElementById('spcPeriod').value.trim(),
+    parameter: document.getElementById('spcParameter').value.trim() || '-',
+    subgroupSize: n,
+    data: data,
+    stats: { xbarBar, rBar, uclX: xbarBar + consts.A2 * rBar, lclX: xbarBar - consts.A2 * rBar, uclR: consts.D4 * rBar, lclR: consts.D3 * rBar, cp, cpk, sigma },
+    usl: isNaN(usl) ? null : usl,
+    lsl: isNaN(lsl) ? null : lsl,
+    target: parseFloat(document.getElementById('spcTarget').value) || null,
+    savedAt: Date.now()
+  };
+
+  const history = loadFromStorage();
+  history.unshift(record);
+  saveToStorage(history);
+  showToast('Data SPC berhasil disimpan!', 'success');
+};
+
+window.clearSpc = function() {
+  document.getElementById('spcGroup').value = '';
+  document.getElementById('spcPeriod').value = '';
+  document.getElementById('spcParameter').value = '';
+  document.getElementById('spcUSL').value = '';
+  document.getElementById('spcLSL').value = '';
+  document.getElementById('spcTarget').value = '';
+  document.getElementById('spcSubgroupSize').value = '5';
+  initSpcRows();
+  document.getElementById('spcWrap').style.display = 'none';
+  showToast('Form SPC direset', 'success');
+};
+
+window.downloadSpcTransparent = function() {
+  const xbarCanvas = document.getElementById('spcXbarCanvas');
+  const rCanvas = document.getElementById('spcRCanvas');
+  if (!xbarCanvas || document.getElementById('spcWrap').style.display === 'none') {
+    showToast('Buat chart terlebih dahulu!', 'error'); return;
+  }
+  showToast('Membuat PNG transparan...', 'info');
+
+  try {
+    const W = 960;
+    const H1 = 400, H2 = 320;
+    const gap = 40;
+    const totalH = H1 + gap + H2;
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = W * 2;
+    outCanvas.height = totalH * 2;
+    const oCtx = outCanvas.getContext('2d');
+
+    // Transparent background
+    oCtx.clearRect(0, 0, outCanvas.width, outCanvas.height);
+
+    oCtx.drawImage(xbarCanvas, 0, 0, W * 2, H1 * 2);
+    oCtx.drawImage(rCanvas, 0, (H1 + gap) * 2, W * 2, H2 * 2);
+
+    const pngUrl = outCanvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    const group = document.getElementById('spcGroup').value.trim() || 'IPPI';
+    const param = (document.getElementById('spcParameter').value.trim() || 'SPC').replace(/\s+/g, '_');
+    link.download = 'SPC_Transparan_' + group.replace(/\s+/g, '_') + '_' + param + '_' + Date.now() + '.png';
+    link.href = pngUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('PNG transparan berhasil diunduh!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal membuat PNG: ' + err.message, 'error');
+  }
+};
+
+window.exportSpcPDF = async function() {
+  const { data, n } = getSpcData();
+  if (data.length < 2) { showToast('Masukkan data terlebih dahulu!', 'error'); return; }
+
+  showToast('Membuat PDF...', 'info');
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const W = 297, H = 210, M = 16;
+
+  // Header
+  doc.setFillColor(7, 11, 20);
+  doc.rect(0, 0, W, 22, 'F');
+  doc.setFillColor(56, 189, 248);
+  doc.rect(0, 0, W, 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(56, 189, 248);
+  doc.text('PT. INDORAMA POLYPET INDONESIA', M, 10);
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('HSE & QA/QC Division  |  Statistical Process Control', M, 15);
+
+  const param = document.getElementById('spcParameter').value.trim() || 'Control Chart';
+  const group = document.getElementById('spcGroup').value.trim();
+  const period = document.getElementById('spcPeriod').value.trim();
+
+  doc.setFillColor(19, 24, 32);
+  doc.roundedRect(M, 26, W - M * 2, 18, 2, 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(241, 245, 249);
+  doc.text(param, M + 4, 35);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  if (group) doc.text('Tim: ' + group, M + 4, 40);
+  if (period) doc.text('Periode: ' + period, M + 80, 40);
+
+  // Stats box
+  const statsDiv = document.getElementById('spcStats');
+  if (statsDiv) {
+    try {
+      const canvas = await html2canvas(statsDiv, { backgroundColor: '#0d1117', scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', M, 50, 80, 22);
+    } catch (e) {}
+  }
+
+  // X-bar chart
+  try {
+    const canvas = document.getElementById('spcXbarCanvas');
+    const imgData = canvas.toDataURL('image/png');
+    doc.addImage(imgData, 'PNG', M, 78, W - M * 2, (W - M * 2) * (400 / 960));
+  } catch (e) {}
+
+  // R chart on new page
+  doc.addPage();
+  try {
+    const canvas = document.getElementById('spcRCanvas');
+    const imgData = canvas.toDataURL('image/png');
+    doc.addImage(imgData, 'PNG', M, 20, W - M * 2, (W - M * 2) * (320 / 960));
+  } catch (e) {}
+
+  // Data table
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(56, 189, 248);
+  doc.text('Tabel Data Subgroup', M, 140);
+
+  let y = 148;
+  const rowH = 7;
+  const nSize = parseInt(document.getElementById('spcSubgroupSize').value) || 5;
+  const colWs = [12, 18, 18, 18, 18, 18, 22, 22];
+  const headers = ['SG', 'X1', 'X2', 'X3', 'X4', 'X5', 'X̄', 'R'];
+
+  doc.setFillColor(19, 24, 32);
+  doc.rect(M, y, W - M * 2, 9, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(241, 245, 249);
+  let tx = M;
+  headers.forEach((hd, hi) => {
+    if (hi <= nSize || hi >= 6) doc.text(hd, tx + 3, y + 6);
+    tx += colWs[hi];
+  });
+  y += 9;
+
+  doc.setFont('helvetica', 'normal');
+  data.forEach((d, i) => {
+    if (y > H - M - 5) { doc.addPage(); y = M + 5; }
+    doc.setFillColor(i % 2 === 0 ? 26 : 22, i % 2 === 0 ? 34 : 29, i % 2 === 0 ? 54 : 45);
+    doc.rect(M, y, W - M * 2, rowH, 'F');
+    doc.setTextColor(226, 232, 240);
+    tx = M;
+    doc.text(d.sg.toString(), tx + 3, y + 5);
+    tx += colWs[0];
+    d.vals.forEach((v, vi) => {
+      doc.text(v.toFixed(2), tx + 3, y + 5);
+      tx += colWs[vi + 1];
+    });
+    tx = M + colWs[0] + colWs[1] * 5;
+    doc.text(d.xbar.toFixed(3), tx + 3, y + 5);
+    tx += colWs[6];
+    doc.text(d.r.toFixed(3), tx + 3, y + 5);
+    y += rowH;
+  });
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    doc.setFillColor(7, 11, 20);
+    doc.rect(0, H - 10, W, 10, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text('PT. Indorama Polypet Indonesia  |  QCC Analyzer', M, H - 3);
+    doc.text('Halaman ' + p + ' / ' + pageCount, W - M, H - 3, { align: 'right' });
+  }
+
+  const fname = 'SPC_' + (group || 'IPPI').replace(/\s+/g, '_') + '_' + Date.now() + '.pdf';
+  doc.save(fname);
+  showToast('PDF berhasil diunduh!', 'success');
+};
+
+
+// ════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════
+initMGrid();
+initWhyChain();
+initParetoRows();
+initSpcRows();
+loadTheme();
+const now=new Date();
+document.getElementById('analysisDate').value=now.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+</script>
+</body>
+</html>
