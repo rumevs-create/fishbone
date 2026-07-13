@@ -4,6 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QCC Analyzer — PT IPPI | Fishbone · 5Why · Pareto · SPC</title>
+
+<!-- Firebase Compat — shared project dengan QCC Teams (qccteams) -->
+<script src="https://www.gstatic.com/firebasejs/11.0.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore-compat.js"></script>
+<script>
+  var db;
+  try {
+    firebase.initializeApp({
+      apiKey: "AIzaSyDHX8hg2Tdk1uVJzHexbdTNNpo9KZ7NbDc",
+      authDomain: "qccteams.firebaseapp.com",
+      projectId: "qccteams",
+      storageBucket: "qccteams.firebasestorage.app",
+      messagingSenderId: "542037920803",
+      appId: "1:542037920803:web:9b9f9e31d3d63c5d6c8b9a"
+    });
+    db = firebase.firestore();
+    console.log("✅ Firebase (qccteams) initialized");
+  } catch (e) {
+    console.error("❌ Firebase error:", e);
+  }
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -2125,16 +2146,18 @@
 
 <script>
 // ════════════════════════════════════════════════════
-// LOCAL STORAGE PERSISTENCE
+// FIRESTORE PERSISTENCE (shared project: qccteams)
+// Koleksi global "qccAnalyses" — semua tim baca/tulis bareng,
+// sama seperti perilaku localStorage sebelumnya.
 // ════════════════════════════════════════════════════
-const LS_KEY = 'fishbone_5why_history';
+const FS_COLLECTION = 'qccAnalyses';
 
-function loadFromStorage() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+function saveRecordToFirestore(record) {
+  return db.collection(FS_COLLECTION).add(record);
 }
 
-function saveToStorage(arr) {
-  localStorage.setItem(LS_KEY, JSON.stringify(arr));
+function deleteRecordFromFirestore(id) {
+  return db.collection(FS_COLLECTION).doc(id).delete();
 }
 
 // ════════════════════════════════════════════════════
@@ -2147,7 +2170,6 @@ window.saveFishbone = function() {
   if (!problem) { showToast('Isi pernyataan masalah terlebih dahulu!', 'error'); return; }
 
   const data = {
-    id: Date.now().toString(),
     col: 'fishbone',
     type: 'fishbone',
     group: group || '-',
@@ -2157,10 +2179,9 @@ window.saveFishbone = function() {
     savedAt: Date.now()
   };
 
-  const history = loadFromStorage();
-  history.unshift(data);
-  saveToStorage(history);
-  showToast('✓ Data Fishbone berhasil disimpan!', 'success');
+  saveRecordToFirestore(data)
+    .then(() => showToast('✓ Data Fishbone berhasil disimpan!', 'success'))
+    .catch(err => showToast('Gagal menyimpan: ' + err.message, 'error'));
 };
 
 // ════════════════════════════════════════════════════
@@ -2174,7 +2195,6 @@ window.save5Why = function() {
   if (!problem) { showToast('Isi masalah terlebih dahulu!', 'error'); return; }
 
   const data = {
-    id: Date.now().toString(),
     col: '5why',
     type: '5why',
     group: document.getElementById('whyGroup').value.trim() || '-',
@@ -2184,21 +2204,30 @@ window.save5Why = function() {
     savedAt: Date.now()
   };
 
-  const history = loadFromStorage();
-  history.unshift(data);
-  saveToStorage(history);
-  showToast('✓ Data 5Why berhasil disimpan!', 'success');
+  saveRecordToFirestore(data)
+    .then(() => showToast('✓ Data 5Why berhasil disimpan!', 'success'))
+    .catch(err => showToast('Gagal menyimpan: ' + err.message, 'error'));
 };
 
 // ════════════════════════════════════════════════════
-// LOAD HISTORY
+// LOAD HISTORY (real-time dari Firestore)
 // ════════════════════════════════════════════════════
 let allHistory = [];
 let currentFilter = 'all';
+let historyUnsub = null;
 
 window.loadHistory = function() {
-  allHistory = loadFromStorage();
-  renderHistory();
+  if (historyUnsub) { renderHistory(); return; }
+  historyUnsub = db.collection(FS_COLLECTION).orderBy('savedAt', 'desc').onSnapshot(
+    snap => {
+      allHistory = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderHistory();
+    },
+    err => {
+      console.error(err);
+      showToast('Gagal memuat riwayat: ' + err.message, 'error');
+    }
+  );
 };
 
 window.filterHistory = function(f, btn) {
@@ -2371,11 +2400,10 @@ window.closeDetailModal = function() {
 
 window.deleteRecord = function(id) {
   if (!confirm('Hapus data ini?')) return;
-  const history = loadFromStorage().filter(h => h.id !== id);
-  saveToStorage(history);
-  allHistory = history;
-  renderHistory();
-  showToast('Data berhasil dihapus', 'success');
+  deleteRecordFromFirestore(id)
+    .then(() => showToast('Data berhasil dihapus', 'success'))
+    .catch(err => showToast('Gagal menghapus: ' + err.message, 'error'));
+  // allHistory & tampilan akan otomatis ter-update lewat listener real-time di loadHistory()
 };
 
 // ════════════════════════════════════════════════════
@@ -3499,7 +3527,6 @@ window.savePareto = function() {
   if (data.length === 0) { showToast('Masukkan data terlebih dahulu!', 'error'); return; }
 
   const record = {
-    id: Date.now().toString(),
     col: 'pareto',
     type: 'pareto',
     group: document.getElementById('paretoGroup').value.trim() || '-',
@@ -3510,10 +3537,9 @@ window.savePareto = function() {
     savedAt: Date.now()
   };
 
-  const history = loadFromStorage();
-  history.unshift(record);
-  saveToStorage(history);
-  showToast('Data Pareto berhasil disimpan!', 'success');
+  saveRecordToFirestore(record)
+    .then(() => showToast('Data Pareto berhasil disimpan!', 'success'))
+    .catch(err => showToast('Gagal menyimpan: ' + err.message, 'error'));
 };
 
 window.clearPareto = function() {
@@ -4128,7 +4154,6 @@ window.saveSpc = function() {
   }
 
   const record = {
-    id: Date.now().toString(),
     col: 'spc',
     type: 'spc',
     group: document.getElementById('spcGroup').value.trim() || '-',
@@ -4143,10 +4168,9 @@ window.saveSpc = function() {
     savedAt: Date.now()
   };
 
-  const history = loadFromStorage();
-  history.unshift(record);
-  saveToStorage(history);
-  showToast('Data SPC berhasil disimpan!', 'success');
+  saveRecordToFirestore(record)
+    .then(() => showToast('Data SPC berhasil disimpan!', 'success'))
+    .catch(err => showToast('Gagal menyimpan: ' + err.message, 'error'));
 };
 
 window.clearSpc = function() {
