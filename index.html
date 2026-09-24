@@ -2769,6 +2769,8 @@ window.exportRecordPDF = async function(id) {
   const h = allHistory.find(x => x.id === id);
   if (!h) return;
   const isFb = h.col === 'fishbone';
+  const isPareto = h.col === 'pareto';
+  const isSpc = h.col === 'spc';
   showToast('Membuat PDF...', 'info');
 
   const { doc, W, H, M, cW } = pdfSetup();
