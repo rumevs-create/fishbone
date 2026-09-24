@@ -2268,7 +2268,7 @@ function buildHistoryCard(h) {
           <div class="hc-problem">${h.problem || '-'}</div>
         </div>
         <div class="hc-actions">
-          <button class="btn-icon view" onclick="showDetail('${h.id}')" title="Lihat Detail">👁</button>
+          <button class="btn-icon view" onclick="recallToForm('${h.id}')" title="Muat ke Form Analisis">👁</button>
           <button class="btn-icon" onclick="exportRecordPDF('${h.id}')" title="Export PDF" style="color:#f87171;border-color:rgba(248,113,113,0.2);">📄</button>
           <button class="btn-icon" onclick="deleteRecord('${h.id}')" title="Hapus">🗑</button>
         </div>
@@ -2404,6 +2404,131 @@ window.deleteRecord = function(id) {
     .then(() => showToast('Data berhasil dihapus', 'success'))
     .catch(err => showToast('Gagal menghapus: ' + err.message, 'error'));
   // allHistory & tampilan akan otomatis ter-update lewat listener real-time di loadHistory()
+};
+
+// ════════════════════════════════════════════════════
+// RECALL — muat data riwayat kembali ke form analisis
+// ════════════════════════════════════════════════════
+window.goToTab = function(tabId) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const panel = document.getElementById(tabId);
+  if (panel) panel.classList.add('active');
+  const btn = document.querySelector(`.tab[onclick*="switchTab('${tabId}'"]`);
+  if (btn) btn.classList.add('active');
+};
+
+window.recallToForm = function(id) {
+  const h = allHistory.find(x => x.id === id);
+  if (!h) return;
+
+  if (h.col === 'fishbone') {
+    document.getElementById('groupName').value = h.group && h.group !== '-' ? h.group : '';
+    document.getElementById('analysisDate').value = h.date || '';
+    document.getElementById('problemStatement').value = h.problem || '';
+    window.mCauses = JSON.parse(JSON.stringify(Object.assign(
+      { Man: [], Machine: [], Method: [], Material: [], Measurement: [], 'Mother Nature': [] },
+      h.causes || {}
+    )));
+    initMGrid();
+    M_DATA.forEach(m => {
+      const causes = mCauses[m.key] || [];
+      const listId = 'causes-' + m.key.replace(/ /g, '');
+      const list = document.getElementById(listId);
+      list.innerHTML = '';
+      if (causes.length === 0) {
+        addCause(m.key);
+      } else {
+        causes.forEach((c, idx) => {
+          const item = document.createElement('div');
+          item.className = 'cause-item';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.placeholder = 'Penyebab ' + (idx + 1) + '...';
+          input.value = c;
+          input.setAttribute('onchange', `syncCauses('${m.key}')`);
+          const btn = document.createElement('button');
+          btn.className = 'btn-remove';
+          btn.textContent = '✕';
+          btn.setAttribute('onclick', `removeCause(this,'${m.key}')`);
+          item.appendChild(input);
+          item.appendChild(btn);
+          list.appendChild(item);
+        });
+      }
+    });
+    document.getElementById('fishboneWrap').style.display = 'none';
+    window.goToTab('fishbone');
+
+  } else if (h.col === 'pareto') {
+    document.getElementById('paretoGroup').value = h.group && h.group !== '-' ? h.group : '';
+    document.getElementById('paretoPeriod').value = h.period || '';
+    document.getElementById('paretoTitle').value = h.title || '';
+    const container = document.getElementById('paretoRows');
+    container.innerHTML = '';
+    const data = h.data && h.data.length ? h.data : [{ cat: '', val: '' }];
+    data.forEach(d => {
+      const row = document.createElement('div');
+      row.className = 'pareto-row';
+      row.innerHTML = `<input type="text" placeholder="Kategori masalah..." class="pareto-cat">
+        <input type="number" placeholder="Jumlah" class="pareto-val" min="0">
+        <button class="btn-remove" onclick="removeParetoRow(this)">✕</button>`;
+      container.appendChild(row);
+      row.querySelector('.pareto-cat').value = d.cat || '';
+      row.querySelector('.pareto-val').value = d.val !== undefined ? d.val : '';
+    });
+    document.getElementById('paretoWrap').style.display = 'none';
+    window.goToTab('pareto');
+
+  } else if (h.col === 'spc') {
+    document.getElementById('spcGroup').value = h.group && h.group !== '-' ? h.group : '';
+    document.getElementById('spcPeriod').value = h.period || '';
+    document.getElementById('spcParameter').value = h.parameter || '';
+    document.getElementById('spcSubgroupSize').value = h.subgroupSize || 5;
+    document.getElementById('spcUSL').value = h.usl !== null && h.usl !== undefined ? h.usl : '';
+    document.getElementById('spcLSL').value = h.lsl !== null && h.lsl !== undefined ? h.lsl : '';
+    document.getElementById('spcTarget').value = h.target !== null && h.target !== undefined ? h.target : '';
+
+    const container = document.getElementById('spcRows');
+    const n = parseInt(document.getElementById('spcSubgroupSize').value) || 5;
+    container.innerHTML = '';
+    const header = document.createElement('div');
+    header.className = 'spc-header-row';
+    let hHTML = '<span>SG</span>';
+    for (let i = 1; i <= 5; i++) hHTML += `<span style="${i > n ? 'opacity:0.3;' : ''}">X${i}</span>`;
+    hHTML += '<span>X̄</span><span>R</span><span></span>';
+    header.innerHTML = hHTML;
+    container.appendChild(header);
+
+    const rows = h.data && h.data.length ? h.data : [];
+    const rowCount = Math.max(rows.length, 2);
+    for (let r = 0; r < rowCount; r++) addSpcRow();
+    const spcRows = document.querySelectorAll('.spc-row');
+    rows.forEach((d, idx) => {
+      const row = spcRows[idx];
+      if (!row) return;
+      (d.vals || []).forEach((v, vi) => {
+        const inp = row.querySelector('.spc-x' + (vi + 1));
+        if (inp) { inp.value = v; calcSpcRow(inp); }
+      });
+    });
+    document.getElementById('spcWrap').style.display = 'none';
+    window.goToTab('spc');
+
+  } else {
+    // 5Why (default)
+    document.getElementById('whyGroup').value = h.group && h.group !== '-' ? h.group : '';
+    document.getElementById('whyProblem').value = h.problem || '';
+    document.getElementById('rootCause').value = h.rootCause || '';
+    window.whyAnswers = (h.whys && h.whys.length ? [...h.whys] : ['', '', '', '', '']);
+    while (window.whyAnswers.length < 5) window.whyAnswers.push('');
+    initWhyChain();
+    document.querySelectorAll('#whyChain textarea').forEach((ta, i) => { ta.value = window.whyAnswers[i] || ''; });
+    window.goToTab('whys');
+  }
+
+  closeDetailModal();
+  showToast('Data dimuat ke form analisis ✓', 'success');
 };
 
 // ════════════════════════════════════════════════════
